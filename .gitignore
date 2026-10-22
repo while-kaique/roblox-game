@@ -1,0 +1,4 @@
+# Tools and executables
+tools/*.exe
+tools/*.zip
+*.zip
