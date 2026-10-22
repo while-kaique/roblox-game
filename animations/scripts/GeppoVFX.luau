@@ -3,6 +3,11 @@
     GEPPO (SKY WALK) IN-GAME WIND & SHOCKWAVE VFX HANDLER FOR ROBLOX (LUAU)
     =============================================================================
     Place inside: StarterCharacterScripts or inside a Tool / Ability script
+    SFX:
+      Geppo Sound : rbxassetid://96347429008558
+        └─ EqualizerSoundEffect  HighGain=0  LowGain=5  MidGain=5  Priority=2
+      Dash Sound  : rbxassetid://128746179989349
+    VFX Model (Creator Marketplace): assetid 137725942081281
     =============================================================================
 --]]
 
@@ -71,11 +76,20 @@ function GeppoVFX.SpawnWindShockwave(foot)
 	particles:Emit(25)
 	Debris:AddItem(attachment, 0.5)
 	
-	-- 3. Sound Effect (Air Pop / Shockwave)
+	-- 3. Sound Effect (Geppo - rbxassetid://96347429008558)
 	local sound = Instance.new("Sound")
-	sound.SoundId = "rbxassetid://9114223175" -- Punchy air burst / whoosh
+	sound.SoundId = "rbxassetid://96347429008558"
 	sound.Volume = 1.2
-	sound.PlaybackSpeed = 1.15
+	sound.PlaybackSpeed = 1.1
+
+	-- EqualizerSoundEffect: boost lows/mids for punchy anime stomp
+	local eq = Instance.new("EqualizerSoundEffect")
+	eq.HighGain  = 0
+	eq.LowGain   = 5
+	eq.MidGain   = 5
+	eq.Priority  = 2
+	eq.Parent    = sound
+
 	sound.Parent = footPart
 	sound:Play()
 	Debris:AddItem(sound, 1.5)
