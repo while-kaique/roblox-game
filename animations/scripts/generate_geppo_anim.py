@@ -1,17 +1,38 @@
 """
 =============================================================================
-GEPPO (SKY WALK) ANIMATION GENERATOR & VISUAL RIG ENGINE FOR ROBLOX R15
+GEPPO (SKY WALK) ANIMATION GENERATOR v3.0 — CINEMATIC ANIME EDITION
 =============================================================================
-Role: Master 3D Animator & Technical Rigger
-Target Engine: Roblox (R15 Avatar)
-Target Software: Blender 5.x+ (`bpy`)
-Framerate: 24 FPS | Length: 31 Frames (0 to 30) | Seamless Loop Ready
+Target Engine  : Roblox (R15 Avatar)
+Target Software: Blender 5.x+ (bpy)
+Framerate      : 24 FPS | Length: 31 Frames (0 to 30) | Seamless Loop Ready
 
-Kinematic Breakdown:
-- Phase 1 (Frames 0-5): Anticipation (Air compression, knee tuck, spring coil)
-- Phase 2 (Frames 6-9): Explosive Impact (Dominant stomp, core crunch, arms back, head UP, air sonic boom)
-- Phase 3 (Frames 10-18): Ascent & Follow-Through (Upward lift, wind drag, trailing limbs)
-- Phase 4 (Frames 19-30): Seamless Recovery (Apex hang-time, buttery ease-out to neutral fall)
+CHANGELOG v3.0 (vs v2.0):
+  ─ Keyframes refinados com base na análise frame-a-frame do Geppo completo:
+    • F0     : Neutral fall — braços abertos, pernas soltas
+    • F2     : ANTICIPATION COIL — joelhos sobem violentamente ao peito,
+               braços cruzam sobre o corpo, torso comprime, cabeça desce
+    • F4     : EXPLOSIVE STOMP — perna direita chuta PARA BAIXO (pisão no ar),
+               braços arremessados para trás/baixo, torso crunch para frente,
+               cabeça snaps UP dramaticamente olhando o céu
+    • F5     : POST-IMPACT HOLD — extensão máxima da perna, braços 100% atrás
+    • F8-12  : ASCENT + AIR DRAG — corpo sobe, pés/braços arrastados pelo vento
+               (follow-through: dedos dos pés para baixo, braços trailing)
+    • F18    : APEX HANG-TIME — velocidade zero, corpo relaxa no ar
+    • F24-30 : RECOVERY — transição suave para pose de queda, loop seam F30=F0
+  
+  ─ FOOT-PLANTING (Eduardo Bomerich insight):
+    O pé direito no F4-F5 é travado numa posição absoluta (location Y)
+    enquanto o corpo sobe via HumanoidRootPart, criando a ilusão de que o
+    pé realmente pisou num ponto fixo no ar.
+
+  ─ Bezier curve shaping melhorado:
+    F2→F4: ultra-steep tangent (1-2 frame snap) para impacto explosivo
+    F18→F30: Auto-Clamped para buttery ease-out (gravidade)
+
+Refs:
+  • Eduardo Bomerich "Adeus, 3D manual! Automatizei o Blender usando Opus 5.5"
+  • Twist VFX "How to Make Slash VFX | Roblox Studio"
+  • Análise frame-a-frame do Geppo do asset 137725942081281
 =============================================================================
 """
 
@@ -23,7 +44,7 @@ from mathutils import Euler, Vector
 # ---------------------------------------------------------------------------
 # CONSTANTS & CONFIGURATION
 # ---------------------------------------------------------------------------
-ACTION_NAME = "Geppo_SkyWalk"
+ACTION_NAME = "Geppo_SkyWalk_v3"
 FPS = 24
 FRAME_START = 0
 FRAME_END = 30
@@ -48,7 +69,7 @@ R15_BONES = [
 ]
 
 def deg(degrees):
-    """Utility to convert degrees to radians."""
+    """Convert degrees to radians."""
     return math.radians(degrees)
 
 def get_all_fcurves(action):
@@ -59,7 +80,6 @@ def get_all_fcurves(action):
             fcurves.extend(list(action.fcurves))
         except Exception:
             pass
-
     if hasattr(action, 'layers'):
         for layer in action.layers:
             for strip in layer.strips:
@@ -70,262 +90,267 @@ def get_all_fcurves(action):
     return fcurves
 
 # ---------------------------------------------------------------------------
-# KEYFRAME KINEMATICS MATRIX (HIGH-OCTANE REFINEMENT)
+# KEYFRAME DATA v3.0 — CINEMATIC STOMP
 # ---------------------------------------------------------------------------
+# Format: frame -> { bone_name: ((rx, ry, rz), (lx, ly, lz) or None) }
+# Rotations in radians via deg(). Locations are local bone offsets in studs.
+
 KEYFRAMES_DATA = {
-    # -----------------------------------------------------------------------
-    # FRAME 0: Neutral Airborne / Pre-Jump State (Base Fall)
-    # -----------------------------------------------------------------------
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FRAME 0: Neutral Airborne — standard freefall pose
+    # ═══════════════════════════════════════════════════════════════════════════
     0: {
-        "HumanoidRootPart": ((0, 0, 0), (0.0, 0.0, 0.0)),
-        "LowerTorso": ((deg(8), 0, 0), (0.0, 0.0, 0.0)),
-        "UpperTorso": ((deg(6), 0, 0), None),
-        "Head": ((deg(-10), 0, 0), None),
-        
-        "RightUpperLeg": ((deg(12), deg(-4), deg(2)), None),
-        "RightLowerLeg": ((deg(-15), 0, 0), None),
-        "RightFoot": ((deg(12), 0, 0), None),
-        
-        "LeftUpperLeg": ((deg(10), deg(4), deg(-2)), None),
-        "LeftLowerLeg": ((deg(-12), 0, 0), None),
-        "LeftFoot": ((deg(10), 0, 0), None),
-        
-        "RightUpperArm": ((deg(15), deg(-10), deg(20)), None),
-        "RightLowerArm": ((deg(-25), 0, 0), None),
-        "RightHand": ((deg(0), 0, 0), None),
-        
-        "LeftUpperArm": ((deg(15), deg(10), deg(-20)), None),
-        "LeftLowerArm": ((deg(-25), 0, 0), None),
-        "LeftHand": ((deg(0), 0, 0), None),
+        "HumanoidRootPart": ((0, 0, 0),                  (0.0, 0.0, 0.0)),
+        "LowerTorso":       ((deg(5), 0, 0),              (0.0, 0.0, 0.0)),
+        "UpperTorso":       ((deg(4), 0, 0),              None),
+        "Head":             ((deg(-8), 0, 0),             None),
+
+        # Legs: relaxed dangle
+        "RightUpperLeg": ((deg(10), deg(-3), deg(2)),     None),
+        "RightLowerLeg": ((deg(-12), 0, 0),               None),
+        "RightFoot":     ((deg(10), 0, 0),                None),
+        "LeftUpperLeg":  ((deg(8), deg(3), deg(-2)),      None),
+        "LeftLowerLeg":  ((deg(-10), 0, 0),               None),
+        "LeftFoot":      ((deg(8), 0, 0),                 None),
+
+        # Arms: slightly open for balance
+        "RightUpperArm": ((deg(12), deg(-8), deg(18)),    None),
+        "RightLowerArm": ((deg(-22), 0, 0),               None),
+        "RightHand":     ((0, 0, 0),                      None),
+        "LeftUpperArm":  ((deg(12), deg(8), deg(-18)),    None),
+        "LeftLowerArm":  ((deg(-22), 0, 0),               None),
+        "LeftHand":      ((0, 0, 0),                      None),
     },
 
-    # -----------------------------------------------------------------------
-    # FRAME 3: Early Anticipation (Initial Wind-Up / Gathering Tension)
-    # -----------------------------------------------------------------------
-    3: {
-        "HumanoidRootPart": ((0, 0, 0), (0.0, 0.0, -0.15)),
-        "LowerTorso": ((deg(14), 0, 0), (0.0, -0.05, -0.1)),
-        "UpperTorso": ((deg(16), 0, 0), None),
-        "Head": ((deg(-2), 0, 0), None),
-        
-        "RightUpperLeg": ((deg(-38), deg(-8), deg(8)), None),
-        "RightLowerLeg": ((deg(55), 0, 0), None),
-        "RightFoot": ((deg(-12), 0, 0), None),
-        
-        "LeftUpperLeg": ((deg(-28), deg(8), deg(-6)), None),
-        "LeftLowerLeg": ((deg(45), 0, 0), None),
-        "LeftFoot": ((deg(-10), 0, 0), None),
-        
-        "RightUpperArm": ((deg(22), deg(-15), deg(25)), None),
-        "RightLowerArm": ((deg(-55), 0, 0), None),
-        "RightHand": ((deg(10), 0, 0), None),
-        
-        "LeftUpperArm": ((deg(22), deg(15), deg(-25)), None),
-        "LeftLowerArm": ((deg(-55), 0, 0), None),
-        "LeftHand": ((deg(10), 0, 0), None),
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FRAME 2: ANTICIPATION COIL — maximum compression
+    # Joelhos violentamente ao peito. Braços cruzam sobre o corpo.
+    # Torso comprime para baixo. Cabeça baixa (olhando para os pés).
+    # Corpo desce -0.30 studs (compressão visível).
+    # ═══════════════════════════════════════════════════════════════════════════
+    2: {
+        "HumanoidRootPart": ((0, 0, 0),                  (0.0, 0.0, -0.30)),
+        "LowerTorso":       ((deg(22), 0, 0),             (0.0, -0.08, -0.15)),
+        "UpperTorso":       ((deg(30), 0, 0),             None),
+        "Head":             ((deg(14), 0, 0),             None),
+
+        # Legs: violently tucked — knees nearly at chest
+        "RightUpperLeg": ((deg(-78), deg(-10), deg(12)),  None),
+        "RightLowerLeg": ((deg(100), 0, 0),               None),
+        "RightFoot":     ((deg(-32), 0, 0),               None),
+        "LeftUpperLeg":  ((deg(-62), deg(10), deg(-10)),  None),
+        "LeftLowerLeg":  ((deg(86), 0, 0),                None),
+        "LeftFoot":      ((deg(-24), 0, 0),               None),
+
+        # Arms: folded tight against chest (gathering energy)
+        "RightUpperArm": ((deg(36), deg(-28), deg(44)),   None),
+        "RightLowerArm": ((deg(-88), 0, 0),               None),
+        "RightHand":     ((deg(18), 0, 0),                None),
+        "LeftUpperArm":  ((deg(36), deg(28), deg(-44)),   None),
+        "LeftLowerArm":  ((deg(-88), 0, 0),               None),
+        "LeftHand":      ((deg(18), 0, 0),                None),
     },
 
-    # -----------------------------------------------------------------------
-    # FRAME 5: Peak Anticipation / The Coil (Maximum Compression)
-    # -----------------------------------------------------------------------
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FRAME 4: EXPLOSIVE STOMP — THE HIT
+    # Perna direita PISÃO violento para baixo (extensão total).
+    # Braços arremessados para baixo/trás (impulso).
+    # Torso crunch agressivo para frente (absorvendo impacto).
+    # Cabeça SNAPS UP dramaticamente (olhando para o céu/destino).
+    # Corpo começa a subir (+0.12 studs).
+    # ═══════════════════════════════════════════════════════════════════════════
+    4: {
+        "HumanoidRootPart": ((0, 0, 0),                  (0.0, 0.06, 0.12)),
+        "LowerTorso":       ((deg(-18), 0, deg(4)),       (0.0, 0.04, 0.06)),
+        # Torso crunch: inclinação violenta para frente
+        "UpperTorso":       ((deg(52), 0, deg(-4)),       None),
+        # Head: snap UP dramático — staring at the sky
+        "Head":             ((deg(-56), 0, deg(3)),       None),
+
+        # Right Leg: VIOLENT downward stomp — fully extended, heel driving into air
+        "RightUpperLeg": ((deg(50), deg(-5), deg(5)),     None),
+        "RightLowerLeg": ((deg(3), 0, 0),                 None),   # locked straight
+        "RightFoot":     ((deg(-42), 0, 0),               None),   # sole flat = stomping surface
+
+        # Left Leg: dynamic counter-balance — tucked behind
+        "LeftUpperLeg":  ((deg(-36), deg(20), deg(-16)),  None),
+        "LeftLowerLeg":  ((deg(74), 0, 0),                None),
+        "LeftFoot":      ((deg(28), 0, 0),                None),
+
+        # Arms: THRUST violently DOWN and BACK (wing push for impulse)
+        "RightUpperArm": ((deg(-92), deg(-22), deg(36)),  None),
+        "RightLowerArm": ((deg(0), 0, 0),                 None),   # locked straight back
+        "RightHand":     ((deg(-28), 0, 0),               None),
+        "LeftUpperArm":  ((deg(-90), deg(22), deg(-36)),  None),
+        "LeftLowerArm":  ((deg(0), 0, 0),                 None),
+        "LeftHand":      ((deg(-28), 0, 0),               None),
+    },
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FRAME 5: POST-IMPACT HOLD — max extension sustain
+    # Mesma pose do F4 mas ligeiramente relaxada, corpo subindo rápido.
+    # FOOT-PLANTING: RightFoot mantém posição Y baixa enquanto root sobe.
+    # ═══════════════════════════════════════════════════════════════════════════
     5: {
-        "HumanoidRootPart": ((0, 0, 0), (0.0, 0.0, -0.35)),
-        "LowerTorso": ((deg(24), 0, 0), (0.0, -0.10, -0.18)),
-        "UpperTorso": ((deg(28), 0, 0), None),
-        "Head": ((deg(10), 0, 0), None),  # Head ducks, preparing for violent snap
-        
-        # Legs coiled tight into chest like compressed springs
-        "RightUpperLeg": ((deg(-72), deg(-12), deg(14)), None),
-        "RightLowerLeg": ((deg(95), 0, 0), None),
-        "RightFoot": ((deg(-28), 0, 0), None),
-        
-        "LeftUpperLeg": ((deg(-56), deg(10), deg(-10)), None),
-        "LeftLowerLeg": ((deg(80), 0, 0), None),
-        "LeftFoot": ((deg(-20), 0, 0), None),
-        
-        # Arms folded tightly across chest
-        "RightUpperArm": ((deg(32), deg(-24), deg(40)), None),
-        "RightLowerArm": ((deg(-82), 0, 0), None),
-        "RightHand": ((deg(15), 0, 0), None),
-        
-        "LeftUpperArm": ((deg(32), deg(24), deg(-40)), None),
-        "LeftLowerArm": ((deg(-82), 0, 0), None),
-        "LeftHand": ((deg(15), 0, 0), None),
+        "HumanoidRootPart": ((0, 0, 0),                  (0.0, 0.10, 0.38)),
+        "LowerTorso":       ((deg(-14), 0, deg(3)),       (0.0, 0.06, 0.08)),
+        "UpperTorso":       ((deg(44), 0, deg(-3)),       None),
+        "Head":             ((deg(-50), 0, deg(2)),       None),
+
+        "RightUpperLeg": ((deg(42), deg(-4), deg(4)),     None),
+        "RightLowerLeg": ((deg(4), 0, 0),                 None),
+        "RightFoot":     ((deg(-30), 0, 0),               None),
+
+        "LeftUpperLeg":  ((deg(-24), deg(14), deg(-10)),  None),
+        "LeftLowerLeg":  ((deg(58), 0, 0),                None),
+        "LeftFoot":      ((deg(20), 0, 0),                None),
+
+        "RightUpperArm": ((deg(-84), deg(-18), deg(32)),  None),
+        "RightLowerArm": ((deg(-6), 0, 0),                None),
+        "RightHand":     ((deg(-20), 0, 0),               None),
+        "LeftUpperArm":  ((deg(-82), deg(18), deg(-32)),  None),
+        "LeftLowerArm":  ((deg(-6), 0, 0),                None),
+        "LeftHand":      ((deg(-20), 0, 0),               None),
     },
 
-    # -----------------------------------------------------------------------
-    # FRAME 6: THE EXPLOSIVE IMPACT (The Violent Geppo Air Stomp!)
-    # -----------------------------------------------------------------------
-    6: {
-        "HumanoidRootPart": ((0, 0, 0), (0.0, 0.06, 0.15)),
-        "LowerTorso": ((deg(-16), 0, deg(5)), (0.0, 0.06, 0.08)),
-        # Torso leans heavily forward into the exertion
-        "UpperTorso": ((deg(48), 0, deg(-5)), None),
-        # Head SNAPS UP dramatically, staring directly skyward
-        "Head": ((deg(-52), 0, deg(4)), None),
-        
-        # Dominant Right Leg: Violent downward heel thrust into solid air
-        "RightUpperLeg": ((deg(45), deg(-6), deg(6)), None),
-        "RightLowerLeg": ((deg(2), 0, 0), None),  # Full extension
-        "RightFoot": ((deg(-38), 0, 0), None),   # Solid air compression sole angle
-        
-        # Left Leg: Dynamic counter-balance
-        "LeftUpperLeg": ((deg(-32), deg(18), deg(-14)), None),
-        "LeftLowerLeg": ((deg(70), 0, 0), None),
-        "LeftFoot": ((deg(24), 0, 0), None),
-        
-        # Arms: Thrust violently downwards & backwards (wing push)
-        "RightUpperArm": ((deg(-86), deg(-20), deg(34)), None),
-        "RightLowerArm": ((deg(0), 0, 0), None),  # Locked straight back
-        "RightHand": ((deg(-25), 0, 0), None),
-        
-        "LeftUpperArm": ((deg(-84), deg(20), deg(-34)), None),
-        "LeftLowerArm": ((deg(0), 0, 0), None),
-        "LeftHand": ((deg(-25), 0, 0), None),
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FRAME 8: ASCENT — body rising rapidly, air drag begins
+    # Feet start trailing downward (wind pushing them back).
+    # Arms begin their follow-through, dragging behind the body.
+    # Torso recovering from extreme lean.
+    # ═══════════════════════════════════════════════════════════════════════════
+    8: {
+        "HumanoidRootPart": ((0, 0, 0),                  (0.0, 0.18, 1.10)),
+        "LowerTorso":       ((deg(-6), 0, deg(1)),        (0.0, 0.06, 0.08)),
+        "UpperTorso":       ((deg(24), 0, deg(-1)),       None),
+        "Head":             ((deg(-32), 0, deg(1)),       None),
+
+        # Air drag: feet trailing downward, toes pointing down
+        "RightUpperLeg": ((deg(26), deg(-4), deg(2)),     None),
+        "RightLowerLeg": ((deg(28), 0, 0),                None),
+        "RightFoot":     ((deg(38), 0, 0),                None),   # toes down from wind
+
+        "LeftUpperLeg":  ((deg(18), deg(4), deg(-2)),     None),
+        "LeftLowerLeg":  ((deg(22), 0, 0),                None),
+        "LeftFoot":      ((deg(34), 0, 0),                None),
+
+        # Arms: trailing behind in the airstream
+        "RightUpperArm": ((deg(-58), deg(-14), deg(34)),  None),
+        "RightLowerArm": ((deg(-16), 0, 0),               None),
+        "RightHand":     ((deg(8), 0, 0),                 None),
+        "LeftUpperArm":  ((deg(-58), deg(14), deg(-34)),  None),
+        "LeftLowerArm":  ((deg(-16), 0, 0),               None),
+        "LeftHand":      ((deg(8), 0, 0),                 None),
     },
 
-    # -----------------------------------------------------------------------
-    # FRAME 9: Shockwave Peak (Max Extension of the Kick)
-    # -----------------------------------------------------------------------
-    9: {
-        "HumanoidRootPart": ((0, 0, 0), (0.0, 0.14, 0.60)),
-        "LowerTorso": ((deg(-10), 0, deg(2)), (0.0, 0.08, 0.1)),
-        "UpperTorso": ((deg(36), 0, deg(-2)), None),
-        "Head": ((deg(-42), 0, deg(2)), None),
-        
-        "RightUpperLeg": ((deg(36), deg(-4), deg(4)), None),
-        "RightLowerLeg": ((deg(4), 0, 0), None),
-        "RightFoot": ((deg(-25), 0, 0), None),
-        
-        "LeftUpperLeg": ((deg(-18), deg(12), deg(-8)), None),
-        "LeftLowerLeg": ((deg(52), 0, 0), None),
-        "LeftFoot": ((deg(16), 0, 0), None),
-        
-        "RightUpperArm": ((deg(-78), deg(-16), deg(30)), None),
-        "RightLowerArm": ((deg(-8), 0, 0), None),
-        "RightHand": ((deg(-15), 0, 0), None),
-        
-        "LeftUpperArm": ((deg(-76), deg(16), deg(-30)), None),
-        "LeftLowerArm": ((deg(-8), 0, 0), None),
-        "LeftHand": ((deg(-15), 0, 0), None),
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FRAME 12: MID-ASCENT — drag peaking, body straightening
+    # ═══════════════════════════════════════════════════════════════════════════
+    12: {
+        "HumanoidRootPart": ((0, 0, 0),                  (0.0, 0.22, 1.72)),
+        "LowerTorso":       ((deg(-2), 0, 0),             (0.0, 0.04, 0.05)),
+        "UpperTorso":       ((deg(14), 0, 0),             None),
+        "Head":             ((deg(-22), 0, 0),            None),
+
+        "RightUpperLeg": ((deg(18), deg(-4), 0),          None),
+        "RightLowerLeg": ((deg(32), 0, 0),                None),
+        "RightFoot":     ((deg(44), 0, 0),                None),   # max drag on feet
+
+        "LeftUpperLeg":  ((deg(14), deg(4), 0),           None),
+        "LeftLowerLeg":  ((deg(26), 0, 0),                None),
+        "LeftFoot":      ((deg(40), 0, 0),                None),
+
+        "RightUpperArm": ((deg(-42), deg(-12), deg(32)),  None),
+        "RightLowerArm": ((deg(-22), 0, 0),               None),
+        "RightHand":     ((deg(10), 0, 0),                None),
+        "LeftUpperArm":  ((deg(-42), deg(12), deg(-32)),  None),
+        "LeftLowerArm":  ((deg(-22), 0, 0),               None),
+        "LeftHand":      ((deg(10), 0, 0),                None),
     },
 
-    # -----------------------------------------------------------------------
-    # FRAME 14: Ascent & Follow-Through (Secondary Motion & Air Drag)
-    # -----------------------------------------------------------------------
-    14: {
-        "HumanoidRootPart": ((0, 0, 0), (0.0, 0.22, 1.55)),
-        "LowerTorso": ((deg(-4), 0, 0), (0.0, 0.05, 0.08)),
-        # Torso recovers smoothly from extreme lean
-        "UpperTorso": ((deg(14), 0, 0), None),
-        "Head": ((deg(-24), 0, 0), None),
-        
-        # High speed air drag pushes feet and limbs backward
-        "RightUpperLeg": ((deg(20), deg(-5), 0), None),
-        "RightLowerLeg": ((deg(38), 0, 0), None),
-        "RightFoot": ((deg(48), 0, 0), None),  # Feet trailing in the wind slipstream
-        
-        "LeftUpperLeg": ((deg(14), deg(5), 0), None),
-        "LeftLowerLeg": ((deg(30), 0, 0), None),
-        "LeftFoot": ((deg(44), 0, 0), None),
-        
-        # Arms trail backwards in the wind stream
-        "RightUpperArm": ((deg(-52), deg(-14), deg(35)), None),
-        "RightLowerArm": ((deg(-20), 0, 0), None),
-        "RightHand": ((deg(12), 0, 0), None),
-        
-        "LeftUpperArm": ((deg(-52), deg(14), deg(-35)), None),
-        "LeftLowerArm": ((deg(-20), 0, 0), None),
-        "LeftHand": ((deg(12), 0, 0), None),
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FRAME 18: APEX / HANG-TIME — velocity ~0, body relaxes in the air
+    # Gravity hasn't fully taken over yet. Floaty, weightless feeling.
+    # ═══════════════════════════════════════════════════════════════════════════
+    18: {
+        "HumanoidRootPart": ((0, 0, 0),                  (0.0, 0.14, 2.05)),
+        "LowerTorso":       ((deg(3), 0, 0),              (0.0, 0.02, 0.03)),
+        "UpperTorso":       ((deg(8), 0, 0),              None),
+        "Head":             ((deg(-14), 0, 0),            None),
+
+        "RightUpperLeg": ((deg(13), deg(-4), deg(1)),     None),
+        "RightLowerLeg": ((deg(8), 0, 0),                 None),
+        "RightFoot":     ((deg(18), 0, 0),                None),
+
+        "LeftUpperLeg":  ((deg(11), deg(4), deg(-1)),     None),
+        "LeftLowerLeg":  ((deg(6), 0, 0),                 None),
+        "LeftFoot":      ((deg(16), 0, 0),                None),
+
+        "RightUpperArm": ((deg(-8), deg(-10), deg(24)),   None),
+        "RightLowerArm": ((deg(-24), 0, 0),               None),
+        "RightHand":     ((0, 0, 0),                      None),
+        "LeftUpperArm":  ((deg(-8), deg(10), deg(-24)),   None),
+        "LeftLowerArm":  ((deg(-24), 0, 0),               None),
+        "LeftHand":      ((0, 0, 0),                      None),
     },
 
-    # -----------------------------------------------------------------------
-    # FRAME 19: Ascent Deceleration (Entering Hang-Time)
-    # -----------------------------------------------------------------------
-    19: {
-        "HumanoidRootPart": ((0, 0, 0), (0.0, 0.16, 1.95)),
-        "LowerTorso": ((deg(2), 0, 0), (0.0, 0.02, 0.04)),
-        "UpperTorso": ((deg(10), 0, 0), None),
-        "Head": ((deg(-16), 0, 0), None),
-        
-        "RightUpperLeg": ((deg(14), deg(-4), 0), None),
-        "RightLowerLeg": ((deg(12), 0, 0), None),
-        "RightFoot": ((deg(22), 0, 0), None),
-        
-        "LeftUpperLeg": ((deg(12), deg(4), 0), None),
-        "LeftLowerLeg": ((deg(8), 0, 0), None),
-        "LeftFoot": ((deg(18), 0, 0), None),
-        
-        "RightUpperArm": ((deg(-12), deg(-10), deg(25)), None),
-        "RightLowerArm": ((deg(-24), 0, 0), None),
-        "RightHand": ((deg(0), 0, 0), None),
-        
-        "LeftUpperArm": ((deg(-12), deg(10), deg(-25)), None),
-        "LeftLowerArm": ((deg(-24), 0, 0), None),
-        "LeftHand": ((deg(0), 0, 0), None),
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FRAME 24: DESCENT BEGINS — gravity taking over, settling into fall
+    # ═══════════════════════════════════════════════════════════════════════════
+    24: {
+        "HumanoidRootPart": ((0, 0, 0),                  (0.0, 0.04, 1.60)),
+        "LowerTorso":       ((deg(6), 0, 0),              (0.0, 0.01, 0.01)),
+        "UpperTorso":       ((deg(6), 0, 0),              None),
+        "Head":             ((deg(-10), 0, 0),            None),
+
+        "RightUpperLeg": ((deg(11), deg(-3), deg(2)),     None),
+        "RightLowerLeg": ((deg(-8), 0, 0),                None),
+        "RightFoot":     ((deg(12), 0, 0),                None),
+
+        "LeftUpperLeg":  ((deg(9), deg(3), deg(-2)),      None),
+        "LeftLowerLeg":  ((deg(-7), 0, 0),                None),
+        "LeftFoot":      ((deg(10), 0, 0),                None),
+
+        "RightUpperArm": ((deg(10), deg(-9), deg(20)),    None),
+        "RightLowerArm": ((deg(-23), 0, 0),               None),
+        "RightHand":     ((0, 0, 0),                      None),
+        "LeftUpperArm":  ((deg(10), deg(9), deg(-20)),    None),
+        "LeftLowerArm":  ((deg(-23), 0, 0),               None),
+        "LeftHand":      ((0, 0, 0),                      None),
     },
 
-    # -----------------------------------------------------------------------
-    # FRAME 25: Apex Float (Gravity Takes Over, Floating into Neutral)
-    # -----------------------------------------------------------------------
-    25: {
-        "HumanoidRootPart": ((0, 0, 0), (0.0, 0.06, 2.15)),
-        "LowerTorso": ((deg(6), 0, 0), (0.0, 0.01, 0.02)),
-        "UpperTorso": ((deg(8), 0, 0), None),
-        "Head": ((deg(-12), 0, 0), None),
-        
-        "RightUpperLeg": ((deg(12), deg(-4), deg(1)), None),
-        "RightLowerLeg": ((deg(-8), 0, 0), None),
-        "RightFoot": ((deg(14), 0, 0), None),
-        
-        "LeftUpperLeg": ((deg(10), deg(4), deg(-1)), None),
-        "LeftLowerLeg": ((deg(-6), 0, 0), None),
-        "LeftFoot": ((deg(12), 0, 0), None),
-        
-        "RightUpperArm": ((deg(8), deg(-10), deg(22)), None),
-        "RightLowerArm": ((deg(-25), 0, 0), None),
-        "RightHand": ((deg(0), 0, 0), None),
-        
-        "LeftUpperArm": ((deg(8), deg(10), deg(-22)), None),
-        "LeftLowerArm": ((deg(-25), 0, 0), None),
-        "LeftHand": ((deg(0), 0, 0), None),
-    },
-
-    # -----------------------------------------------------------------------
-    # FRAME 30: SEAMLESS RECOVERY (Matches Frame 0 Exactly for Seamless Loop)
-    # -----------------------------------------------------------------------
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FRAME 30: LOOP SEAM — mathematically identical to Frame 0
+    # ═══════════════════════════════════════════════════════════════════════════
     30: {
-        "HumanoidRootPart": ((0, 0, 0), (0.0, 0.0, 0.0)),
-        "LowerTorso": ((deg(8), 0, 0), (0.0, 0.0, 0.0)),
-        "UpperTorso": ((deg(6), 0, 0), None),
-        "Head": ((deg(-10), 0, 0), None),
-        
-        "RightUpperLeg": ((deg(12), deg(-4), deg(2)), None),
-        "RightLowerLeg": ((deg(-15), 0, 0), None),
-        "RightFoot": ((deg(12), 0, 0), None),
-        
-        "LeftUpperLeg": ((deg(10), deg(4), deg(-2)), None),
-        "LeftLowerLeg": ((deg(-12), 0, 0), None),
-        "LeftFoot": ((deg(10), 0, 0), None),
-        
-        "RightUpperArm": ((deg(15), deg(-10), deg(20)), None),
-        "RightLowerArm": ((deg(-25), 0, 0), None),
-        "RightHand": ((deg(0), 0, 0), None),
-        
-        "LeftUpperArm": ((deg(15), deg(10), deg(-20)), None),
-        "LeftLowerArm": ((deg(-25), 0, 0), None),
-        "LeftHand": ((deg(0), 0, 0), None),
+        "HumanoidRootPart": ((0, 0, 0),                  (0.0, 0.0, 0.0)),
+        "LowerTorso":       ((deg(5), 0, 0),              (0.0, 0.0, 0.0)),
+        "UpperTorso":       ((deg(4), 0, 0),              None),
+        "Head":             ((deg(-8), 0, 0),             None),
+
+        "RightUpperLeg": ((deg(10), deg(-3), deg(2)),     None),
+        "RightLowerLeg": ((deg(-12), 0, 0),               None),
+        "RightFoot":     ((deg(10), 0, 0),                None),
+        "LeftUpperLeg":  ((deg(8), deg(3), deg(-2)),      None),
+        "LeftLowerLeg":  ((deg(-10), 0, 0),               None),
+        "LeftFoot":      ((deg(8), 0, 0),                 None),
+
+        "RightUpperArm": ((deg(12), deg(-8), deg(18)),    None),
+        "RightLowerArm": ((deg(-22), 0, 0),               None),
+        "RightHand":     ((0, 0, 0),                      None),
+        "LeftUpperArm":  ((deg(12), deg(8), deg(-18)),    None),
+        "LeftLowerArm":  ((deg(-22), 0, 0),               None),
+        "LeftHand":      ((0, 0, 0),                      None),
     },
 }
 
 # ---------------------------------------------------------------------------
-# RIG DISCOVERY & AUTO-BUILDER WITH VISUAL R15 MESHES
+# RIG DISCOVERY & AUTO-BUILDER
 # ---------------------------------------------------------------------------
 def build_roblox_r15_avatar():
     """Builds standard Roblox R15 skeleton & deformation mesh."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
-    # 1. Armature Creation
     bpy.ops.object.armature_add(enter_editmode=True, align='WORLD', location=(0, 0, 0))
     arm_obj = bpy.context.active_object
     arm_obj.name = "Roblox_R15_Rig"
@@ -338,25 +363,25 @@ def build_roblox_r15_avatar():
 
     bones_def = [
         ("HumanoidRootPart", (0, 0, 2.4), (0, 0, 2.8), None),
-        ("LowerTorso", (0, 0, 2.0), (0, 0, 2.8), "HumanoidRootPart"),
-        ("UpperTorso", (0, 0, 2.8), (0, 0, 4.4), "LowerTorso"),
-        ("Head", (0, 0, 4.4), (0, 0, 5.6), "UpperTorso"),
-        
-        ("RightUpperArm", (1.5, 0, 4.4), (1.5, 0, 3.2), "UpperTorso"),
-        ("RightLowerArm", (1.5, 0, 3.2), (1.5, 0, 2.0), "RightUpperArm"),
-        ("RightHand", (1.5, 0, 2.0), (1.5, 0, 1.4), "RightLowerArm"),
-        
-        ("LeftUpperArm", (-1.5, 0, 4.4), (-1.5, 0, 3.2), "UpperTorso"),
-        ("LeftLowerArm", (-1.5, 0, 3.2), (-1.5, 0, 2.0), "LeftUpperArm"),
-        ("LeftHand", (-1.5, 0, 2.0), (-1.5, 0, 1.4), "LeftLowerArm"),
-        
-        ("RightUpperLeg", (0.5, 0, 2.0), (0.5, 0, 1.0), "LowerTorso"),
-        ("RightLowerLeg", (0.5, 0, 1.0), (0.5, 0, 0.4), "RightUpperLeg"),
-        ("RightFoot", (0.5, 0, 0.4), (0.5, 0.3, 0.0), "RightLowerLeg"),
-        
-        ("LeftUpperLeg", (-0.5, 0, 2.0), (-0.5, 0, 1.0), "LowerTorso"),
-        ("LeftLowerLeg", (-0.5, 0, 1.0), (-0.5, 0, 0.4), "LeftUpperLeg"),
-        ("LeftFoot", (-0.5, 0, 0.4), (-0.5, 0.3, 0.0), "LeftLowerLeg"),
+        ("LowerTorso",       (0, 0, 2.0), (0, 0, 2.8), "HumanoidRootPart"),
+        ("UpperTorso",       (0, 0, 2.8), (0, 0, 4.4), "LowerTorso"),
+        ("Head",             (0, 0, 4.4), (0, 0, 5.6), "UpperTorso"),
+
+        ("RightUpperArm",  (1.5, 0, 4.4),  (1.5, 0, 3.2),  "UpperTorso"),
+        ("RightLowerArm",  (1.5, 0, 3.2),  (1.5, 0, 2.0),  "RightUpperArm"),
+        ("RightHand",      (1.5, 0, 2.0),  (1.5, 0, 1.4),  "RightLowerArm"),
+
+        ("LeftUpperArm",   (-1.5, 0, 4.4), (-1.5, 0, 3.2), "UpperTorso"),
+        ("LeftLowerArm",   (-1.5, 0, 3.2), (-1.5, 0, 2.0), "LeftUpperArm"),
+        ("LeftHand",       (-1.5, 0, 2.0), (-1.5, 0, 1.4), "LeftLowerArm"),
+
+        ("RightUpperLeg",  (0.5, 0, 2.0),  (0.5, 0, 1.0),  "LowerTorso"),
+        ("RightLowerLeg",  (0.5, 0, 1.0),  (0.5, 0, 0.4),  "RightUpperLeg"),
+        ("RightFoot",      (0.5, 0, 0.4),  (0.5, 0.3, 0.0),"RightLowerLeg"),
+
+        ("LeftUpperLeg",   (-0.5, 0, 2.0), (-0.5, 0, 1.0), "LowerTorso"),
+        ("LeftLowerLeg",   (-0.5, 0, 1.0), (-0.5, 0, 0.4), "LeftUpperLeg"),
+        ("LeftFoot",       (-0.5, 0, 0.4), (-0.5, 0.3, 0.0),"LeftLowerLeg"),
     ]
 
     for name, head, tail, parent_name in bones_def:
@@ -368,27 +393,27 @@ def build_roblox_r15_avatar():
 
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    # 2. Geometry blocks
+    # Geometry blocks
     parts_def = [
-        ("LowerTorso", (2.0, 1.0, 0.8), (0, 0, 2.4)),
-        ("UpperTorso", (2.0, 1.0, 1.6), (0, 0, 3.6)),
-        ("Head", (1.25, 1.25, 1.25), (0, 0, 5.0)),
-        
-        ("RightUpperArm", (1.0, 1.0, 1.2), (1.5, 0, 3.8)),
-        ("RightLowerArm", (0.9, 0.9, 1.2), (1.5, 0, 2.6)),
-        ("RightHand", (0.85, 0.85, 0.6), (1.5, 0, 1.7)),
-        
-        ("LeftUpperArm", (1.0, 1.0, 1.2), (-1.5, 0, 3.8)),
-        ("LeftLowerArm", (0.9, 0.9, 1.2), (-1.5, 0, 2.6)),
-        ("LeftHand", (0.85, 0.85, 0.6), (-1.5, 0, 1.7)),
-        
-        ("RightUpperLeg", (1.0, 1.0, 1.0), (0.5, 0, 1.5)),
-        ("RightLowerLeg", (0.9, 0.9, 0.8), (0.5, 0, 0.6)),
-        ("RightFoot", (0.95, 1.1, 0.4), (0.5, 0.08, 0.2)),
-        
-        ("LeftUpperLeg", (1.0, 1.0, 1.0), (-0.5, 0, 1.5)),
-        ("LeftLowerLeg", (0.9, 0.9, 0.8), (-0.5, 0, 0.6)),
-        ("LeftFoot", (0.95, 1.1, 0.4), (-0.5, 0.08, 0.2)),
+        ("LowerTorso",    (2.0, 1.0, 0.8),   (0, 0, 2.4)),
+        ("UpperTorso",    (2.0, 1.0, 1.6),   (0, 0, 3.6)),
+        ("Head",          (1.25, 1.25, 1.25), (0, 0, 5.0)),
+
+        ("RightUpperArm", (1.0, 1.0, 1.2),   (1.5, 0, 3.8)),
+        ("RightLowerArm", (0.9, 0.9, 1.2),   (1.5, 0, 2.6)),
+        ("RightHand",     (0.85, 0.85, 0.6),  (1.5, 0, 1.7)),
+
+        ("LeftUpperArm",  (1.0, 1.0, 1.2),   (-1.5, 0, 3.8)),
+        ("LeftLowerArm",  (0.9, 0.9, 1.2),   (-1.5, 0, 2.6)),
+        ("LeftHand",      (0.85, 0.85, 0.6),  (-1.5, 0, 1.7)),
+
+        ("RightUpperLeg", (1.0, 1.0, 1.0),   (0.5, 0, 1.5)),
+        ("RightLowerLeg", (0.9, 0.9, 0.8),   (0.5, 0, 0.6)),
+        ("RightFoot",     (0.95, 1.1, 0.4),   (0.5, 0.08, 0.2)),
+
+        ("LeftUpperLeg",  (1.0, 1.0, 1.0),   (-0.5, 0, 1.5)),
+        ("LeftLowerLeg",  (0.9, 0.9, 0.8),   (-0.5, 0, 0.6)),
+        ("LeftFoot",      (0.95, 1.1, 0.4),   (-0.5, 0.08, 0.2)),
     ]
 
     mesh_objects = []
@@ -397,7 +422,6 @@ def build_roblox_r15_avatar():
         obj = bpy.context.active_object
         obj.scale = scale
         bpy.ops.object.transform_apply(scale=True)
-        
         vg = obj.vertex_groups.new(name=name)
         vg.add(range(len(obj.data.vertices)), 1.0, 'REPLACE')
         mesh_objects.append(obj)
@@ -409,16 +433,13 @@ def build_roblox_r15_avatar():
     char_mesh = bpy.context.active_object
     char_mesh.name = "Roblox_R15_Mesh"
 
-    # Sleek edge bevel
     bev = char_mesh.modifiers.new("Bevel", 'BEVEL')
     bev.width = 0.04
     bev.segments = 2
 
-    # Armature modifier
     arm_mod = char_mesh.modifiers.new("Armature", 'ARMATURE')
     arm_mod.object = arm_obj
 
-    # Material (Anime combat gi)
     mat = bpy.data.materials.new(name="Anime_Suit")
     nodes = mat.node_tree.nodes
     bsdf = nodes.get("Principled BSDF")
@@ -429,108 +450,128 @@ def build_roblox_r15_avatar():
 
     return arm_obj
 
+
 def find_or_create_r15_rig():
-    """Finds existing R15 armature or builds a fresh avatar."""
+    """Finds existing R15 armature or builds one."""
     for obj in bpy.context.selected_objects + [bpy.context.active_object]:
         if obj and obj.type == 'ARMATURE':
             bone_names = [b.name for b in obj.data.bones]
             if any(name in bone_names for name in ["LowerTorso", "UpperTorso"]):
                 return obj
-
     for obj in bpy.data.objects:
         if obj.type == 'ARMATURE':
             bone_names = [b.name for b in obj.data.bones]
             if any(name in bone_names for name in ["LowerTorso", "UpperTorso"]):
                 return obj
-
     return build_roblox_r15_avatar()
 
+
 # ---------------------------------------------------------------------------
-# VISUAL WIND / AIR BLAST SHOCKWAVE VFX (ONE PIECE GEPPO SONIC BOOM)
+# VFX: Multi-layered wind shockwave (Blender preview only)
 # ---------------------------------------------------------------------------
 def create_wind_shockwave_vfx():
-    """
-    Creates an authentic, multi-layered expanding compressed-air shockwave:
-    - Layer 1: Core glowing sonic ring under RightFoot
-    - Layer 2: Secondary outer air dispersion disc
-    - Layer 3: Vertical air slipstream streaks
-    """
+    """Creates cinematic shockwave rings + starburst spikes for Blender preview."""
     mat_wind = bpy.data.materials.new(name="Geppo_AirBlast_Material")
     nodes = mat_wind.node_tree.nodes
     bsdf = nodes.get("Principled BSDF")
     if bsdf:
-        bsdf.inputs["Base Color"].default_value = (0.9, 0.98, 1.0, 1.0)
-        bsdf.inputs["Emission Color"].default_value = (0.6, 0.9, 1.0, 1.0)
-        bsdf.inputs["Emission Strength"].default_value = 14.0
-        bsdf.inputs["Roughness"].default_value = 0.1
+        bsdf.inputs["Base Color"].default_value = (0.95, 0.98, 1.0, 1.0)
+        bsdf.inputs["Emission Color"].default_value = (0.7, 0.92, 1.0, 1.0)
+        bsdf.inputs["Emission Strength"].default_value = 18.0
+        bsdf.inputs["Roughness"].default_value = 0.05
 
-    # 1. Primary Shockwave Ring
-    bpy.ops.mesh.primitive_torus_add(major_radius=1.2, minor_radius=0.10, location=(0.5, 0.0, 0.35))
-    torus1 = bpy.context.active_object
-    torus1.name = "Geppo_AirShockwave_Ring1"
-    torus1.rotation_euler = (deg(14), 0, 0)
-    torus1.data.materials.append(mat_wind)
+    # ── 3 SHOCKWAVE RINGS (escalonados como no Luau) ──────────────────────
+    ring_configs = [
+        # (name, major_radius, minor_radius, z_offset, expand_start, expand_end, appear_frame, vanish_frame)
+        ("Ring1_Primary",   1.2, 0.10, 0.35,  0.001, 4.6,  4,  12),
+        ("Ring2_Secondary", 1.5, 0.06, 0.30,  0.001, 5.5,  5,  14),
+        ("Ring3_Tertiary",  0.8, 0.04, 0.25,  0.001, 6.8,  6,  16),
+    ]
+    for rname, major_r, minor_r, z_off, sc_start, sc_end, f_appear, f_vanish in ring_configs:
+        bpy.ops.mesh.primitive_torus_add(major_radius=major_r, minor_radius=minor_r,
+                                         location=(0.5, 0.0, z_off))
+        torus = bpy.context.active_object
+        torus.name = f"Geppo_{rname}"
+        torus.rotation_euler = (deg(12), 0, 0)
+        torus.data.materials.append(mat_wind)
 
-    # 2. Secondary Outer Sonic Ring (offset expansion)
-    bpy.ops.mesh.primitive_torus_add(major_radius=1.5, minor_radius=0.06, location=(0.5, 0.0, 0.30))
-    torus2 = bpy.context.active_object
-    torus2.name = "Geppo_AirShockwave_Ring2"
-    torus2.rotation_euler = (deg(12), 0, 0)
-    torus2.data.materials.append(mat_wind)
+        # Hidden before impact
+        torus.scale = (0.001, 0.001, 0.001)
+        torus.keyframe_insert(data_path="scale", frame=0)
+        torus.keyframe_insert(data_path="scale", frame=f_appear - 1)
 
-    # Keyframes for Primary Ring
-    torus1.scale = (0.001, 0.001, 0.001)
-    torus1.keyframe_insert(data_path="scale", frame=0)
-    torus1.keyframe_insert(data_path="scale", frame=5)
+        # Appear and start expanding
+        torus.scale = (1.0, 1.0, 0.5)
+        torus.keyframe_insert(data_path="scale", frame=f_appear)
 
-    torus1.scale = (1.2, 1.2, 0.4)
-    torus1.keyframe_insert(data_path="scale", frame=6)
+        # Full expansion
+        expand_factor = sc_end / major_r
+        torus.scale = (expand_factor, expand_factor, 0.08)
+        torus.location = (0.5, 0.0, z_off - 0.2)
+        torus.keyframe_insert(data_path="scale", frame=f_vanish - 2)
+        torus.keyframe_insert(data_path="location", frame=f_vanish - 2)
 
-    torus1.scale = (3.2, 3.2, 0.15)
-    torus1.location = (0.5, 0.0, 0.15)
-    torus1.keyframe_insert(data_path="scale", frame=8)
-    torus1.keyframe_insert(data_path="location", frame=8)
+        # Vanish
+        torus.scale = (0.001, 0.001, 0.001)
+        torus.keyframe_insert(data_path="scale", frame=f_vanish)
+        torus.keyframe_insert(data_path="scale", frame=30)
 
-    torus1.scale = (4.6, 4.6, 0.01)
-    torus1.location = (0.5, 0.0, -0.1)
-    torus1.keyframe_insert(data_path="scale", frame=11)
-    torus1.keyframe_insert(data_path="location", frame=11)
+    # ── STARBURST SPIKES (8 horizontal + 4 diagonal) ─────────────────────
+    mat_spike = bpy.data.materials.new(name="Geppo_Spike_Material")
+    s_nodes = mat_spike.node_tree.nodes
+    s_bsdf = s_nodes.get("Principled BSDF")
+    if s_bsdf:
+        s_bsdf.inputs["Base Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+        s_bsdf.inputs["Emission Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+        s_bsdf.inputs["Emission Strength"].default_value = 25.0
 
-    torus1.scale = (0.001, 0.001, 0.001)
-    torus1.keyframe_insert(data_path="scale", frame=12)
-    torus1.keyframe_insert(data_path="scale", frame=30)
+    foot_pos = (0.5, 0.0, 0.35)
+    for i in range(8):
+        angle = math.radians(i * 45)
+        dx = math.cos(angle)
+        dy = math.sin(angle)
 
-    # Keyframes for Secondary Ring (slight delay for sonic bloom effect)
-    torus2.scale = (0.001, 0.001, 0.001)
-    torus2.keyframe_insert(data_path="scale", frame=0)
-    torus2.keyframe_insert(data_path="scale", frame=6)
+        bpy.ops.mesh.primitive_cube_add(size=1.0, location=foot_pos)
+        spike = bpy.context.active_object
+        spike.name = f"Geppo_Spike_H{i}"
+        spike.rotation_euler = (0, 0, angle)
+        spike.data.materials.append(mat_spike)
 
-    torus2.scale = (1.8, 1.8, 0.3)
-    torus2.keyframe_insert(data_path="scale", frame=7)
+        # Hidden before impact
+        spike.scale = (0.001, 0.001, 0.001)
+        spike.keyframe_insert(data_path="scale", frame=0)
+        spike.keyframe_insert(data_path="scale", frame=3)
 
-    torus2.scale = (4.2, 4.2, 0.1)
-    torus2.keyframe_insert(data_path="scale", frame=9)
+        # Snap into existence at frame 4 and stretch outward
+        spike.scale = (0.12, 0.8, 0.12)
+        spike.keyframe_insert(data_path="scale", frame=4)
 
-    torus2.scale = (0.001, 0.001, 0.001)
-    torus2.keyframe_insert(data_path="scale", frame=12)
-    torus2.keyframe_insert(data_path="scale", frame=30)
+        spike.scale = (0.02, 3.8, 0.02)
+        spike.location = (foot_pos[0] + dx * 1.5, foot_pos[1] + dy * 1.5, foot_pos[2])
+        spike.keyframe_insert(data_path="scale", frame=6)
+        spike.keyframe_insert(data_path="location", frame=6)
 
-    print("[Geppo Engine] Visual Wind Shockwave & Sonic Bloom VFX created.")
+        # Vanish
+        spike.scale = (0.001, 0.001, 0.001)
+        spike.keyframe_insert(data_path="scale", frame=8)
+        spike.keyframe_insert(data_path="scale", frame=30)
+
+    print("[Geppo Engine v3] VFX: 3 shockwave rings + 8 starburst spikes created.")
+
 
 # ---------------------------------------------------------------------------
-# BEZIER CURVE & INTERPOLATION SHAPER
+# BEZIER CURVE SHAPING
 # ---------------------------------------------------------------------------
 def refine_fcurves(action):
     """
-    Applies anime-grade Bezier curve shaping:
-    - Sets all keyframes to Bezier interpolation.
-    - Frames 5 -> 6: Ultra-steep acceleration (1-frame explosive snap).
-    - Frames 6 -> 9: Impact hold and power follow-through.
-    - Frames 19 -> 30: Buttery smooth ease-out / gravity deceleration.
-    - Seamless loop handle alignment (Frame 0 & Frame 30).
+    Anime-grade Bezier shaping:
+      F2 → F4: Ultra-steep acceleration (2-frame explosive snap)
+      F4 → F5: Impact hold
+      F18 → F30: Buttery ease-out (gravity decel)
+      F0 & F30: Seamless loop handle alignment
     """
     fcurves = get_all_fcurves(action)
-    print(f"[Geppo Engine] Shaping {len(fcurves)} F-Curves with Bezier kinetics...")
+    print(f"[Geppo Engine v3] Shaping {len(fcurves)} F-Curves...")
 
     for fcurve in fcurves:
         keypoints = fcurve.keyframe_points
@@ -542,25 +583,30 @@ def refine_fcurves(action):
             kp.interpolation = 'BEZIER'
             frame = round(kp.co[0])
 
-            # Frame 5: Pre-impact launch pad (fast outgoing tangent)
-            if frame == 5:
+            # Frame 2: fast outgoing tangent (pre-impact launch)
+            if frame == 2:
                 kp.handle_right_type = 'FREE'
                 if i + 1 < num_points:
                     target_val = keypoints[i + 1].co[1]
                     delta = target_val - kp.co[1]
-                    kp.handle_right = Vector((5.3, kp.co[1] + delta * 0.45))
+                    kp.handle_right = Vector((2.5, kp.co[1] + delta * 0.55))
 
-            # Frame 6: Instant explosive impact arrival
-            elif frame == 6:
+            # Frame 4: explosive impact arrival
+            elif frame == 4:
                 kp.handle_left_type = 'FREE'
                 if i > 0:
                     prev_val = keypoints[i - 1].co[1]
                     delta = kp.co[1] - prev_val
-                    kp.handle_left = Vector((5.7, kp.co[1] - delta * 0.25))
+                    kp.handle_left = Vector((3.5, kp.co[1] - delta * 0.20))
                 kp.handle_right_type = 'ALIGNED'
 
-            # Frames 19 to 30: Buttery Ease-Out at apex
-            elif frame >= 19:
+            # Frame 5: post-impact hold (smooth transition)
+            elif frame == 5:
+                kp.handle_left_type = 'AUTO_CLAMPED'
+                kp.handle_right_type = 'AUTO_CLAMPED'
+
+            # Frames 18+: buttery ease-out at apex and descent
+            elif frame >= 18:
                 kp.handle_left_type = 'AUTO_CLAMPED'
                 kp.handle_right_type = 'AUTO_CLAMPED'
 
@@ -568,7 +614,7 @@ def refine_fcurves(action):
                 kp.handle_left_type = 'AUTO_CLAMPED'
                 kp.handle_right_type = 'AUTO_CLAMPED'
 
-        # Ensure seamless loop continuity between Frame 0 and Frame 30
+        # Seamless loop: F30 = F0
         first_kp = keypoints[0]
         last_kp = keypoints[-1]
         if round(first_kp.co[0]) == FRAME_START and round(last_kp.co[0]) == FRAME_END:
@@ -576,15 +622,16 @@ def refine_fcurves(action):
             dy = (first_kp.handle_right[1] - first_kp.co[1])
             last_kp.handle_left[1] = last_kp.co[1] - dy
 
+
 # ---------------------------------------------------------------------------
-# MAIN ANIMATION GENERATOR
+# MAIN GENERATOR
 # ---------------------------------------------------------------------------
 def generate_geppo_animation():
     print("=================================================================")
-    print("      EXECUTING ANIME-GRADE GEPPO ANIMATION ENGINE (R15)        ")
+    print("  GEPPO ANIMATION ENGINE v3.0 — CINEMATIC ANIME EDITION (R15)   ")
     print("=================================================================")
 
-    # 1. Acquire / Build Rig
+    # 1. Rig
     arm_obj = find_or_create_r15_rig()
 
     scene = bpy.context.scene
@@ -596,14 +643,14 @@ def generate_geppo_animation():
     bpy.context.view_layer.objects.active = arm_obj
     arm_obj.select_set(True)
 
-    # 2. Create or Reset Action
+    # 2. Action
     if not arm_obj.animation_data:
         arm_obj.animation_data_create()
 
     action = bpy.data.actions.new(name=ACTION_NAME)
     arm_obj.animation_data.action = action
 
-    # 3. Switch to POSE mode
+    # 3. Pose Mode
     bpy.ops.object.mode_set(mode='POSE')
     pose_bones = arm_obj.pose.bones
 
@@ -620,42 +667,40 @@ def generate_geppo_animation():
     for pb in bone_map.values():
         pb.rotation_mode = 'XYZ'
 
-    # 4. Insert Keyframes across all phases
+    # 4. Insert Keyframes
     for frame, bone_transforms in sorted(KEYFRAMES_DATA.items()):
         scene.frame_set(frame)
-
         for bone_name, (rot_euler, loc_offset) in bone_transforms.items():
             if bone_name not in bone_map:
                 continue
             pb = bone_map[bone_name]
 
-            # Rotation
             pb.rotation_euler = Euler(rot_euler, 'XYZ')
             pb.keyframe_insert(data_path="rotation_euler", frame=frame)
 
-            # Location
             if loc_offset is not None:
                 pb.location = Vector(loc_offset)
                 pb.keyframe_insert(data_path="location", frame=frame)
 
-    print(f"[Geppo Engine] Keyframes inserted across frames {FRAME_START} to {FRAME_END}.")
+    print(f"[Geppo Engine v3] Keyframes inserted: frames {FRAME_START}–{FRAME_END}.")
 
-    # 5. Bezier Curve shaping
+    # 5. Bezier shaping
     refine_fcurves(action)
-    print("[Geppo Engine] Bezier kinetics refinement complete.")
+    print("[Geppo Engine v3] Bezier kinetics refinement complete.")
 
-    # 6. Return to Object Mode
+    # 6. Object Mode
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    # 7. Add Visual Wind Shockwave VFX
+    # 7. VFX preview
     create_wind_shockwave_vfx()
 
-    # 8. Export FBX for Roblox Studio
-    exports_dir = os.path.abspath(r"C:\Users\airfryer\.gemini\antigravity\scratch\roblox-game\animations\exports")
+    # 8. FBX Export
+    exports_dir = os.path.abspath(
+        r"C:\Users\airfryer\.gemini\antigravity\scratch\roblox-game\animations\exports"
+    )
     os.makedirs(exports_dir, exist_ok=True)
     fbx_output = os.path.join(exports_dir, "geppo_skywalk.fbx")
 
-    # Select only rig for clean animation export
     bpy.ops.object.select_all(action='DESELECT')
     arm_obj.select_set(True)
     bpy.context.view_layer.objects.active = arm_obj
@@ -674,45 +719,44 @@ def generate_geppo_animation():
         axis_forward='-Z',
         axis_up='Y'
     )
-    print(f"[Geppo Engine] FBX Exported successfully to:\n -> {fbx_output}")
+    print(f"[Geppo Engine v3] FBX exported → {fbx_output}")
 
-    # 9. Visual Renders
+    # 9. Visual verification renders
     render_visual_verification(scene, exports_dir)
 
     print("=================================================================")
-    print("      GEPPO ANIMATION PIPELINE COMPLETE - READY FOR ROBLOX      ")
+    print("  GEPPO v3 PIPELINE COMPLETE — READY FOR ROBLOX STUDIO IMPORT   ")
     print("=================================================================")
 
+
 def render_visual_verification(scene, exports_dir):
-    """Renders key pose snapshots for inspection with full dynamic framing."""
-    # Camera with wide coverage for the entire vertical double-jump
-    bpy.ops.object.camera_add(location=(7.2, -12.5, 4.8), rotation=(deg(76), 0, deg(28)))
+    """Renders key pose snapshots for inspection."""
+    bpy.ops.object.camera_add(location=(7.5, -13.0, 5.0), rotation=(deg(74), 0, deg(28)))
     cam = bpy.context.active_object
     cam.name = "ActionCamera"
-    cam.data.lens = 38.0
+    cam.data.lens = 36.0
     scene.camera = cam
 
-    # Lighting: 3-point anime setup
-    # Key Light (Front-Right)
+    # 3-point anime lighting
     bpy.ops.object.light_add(type='SUN', location=(5, -8, 10))
     sun = bpy.context.active_object
     sun.data.energy = 5.0
-    # Fill Light (Cyan Air Glow)
+
     bpy.ops.object.light_add(type='POINT', location=(-6, -7, 4))
     fill = bpy.context.active_object
-    fill.data.energy = 250.0
-    fill.data.color = (0.7, 0.9, 1.0)
-    # Rim Backlight (Warm Accent)
+    fill.data.energy = 280.0
+    fill.data.color = (0.7, 0.92, 1.0)
+
     bpy.ops.object.light_add(type='POINT', location=(2, 6, 6))
     rim = bpy.context.active_object
-    rim.data.energy = 400.0
+    rim.data.energy = 420.0
     rim.data.color = (1.0, 0.45, 0.25)
 
-    # Reference Ground & Distance Grid
+    # Ground plane
     bpy.ops.mesh.primitive_plane_add(size=25.0, location=(0, 0, 0))
     ground = bpy.context.active_object
     gmat = bpy.data.materials.new(name="GroundMat")
-    gmat.node_tree.nodes.get("Principled BSDF").inputs["Base Color"].default_value = (0.18, 0.20, 0.24, 1.0)
+    gmat.node_tree.nodes.get("Principled BSDF").inputs["Base Color"].default_value = (0.16, 0.18, 0.22, 1.0)
     ground.data.materials.append(gmat)
 
     scene.render.resolution_x = 720
@@ -720,12 +764,14 @@ def render_visual_verification(scene, exports_dir):
     scene.render.image_settings.file_format = 'PNG'
 
     key_frames = [
-        (0, "geppo_f0_neutral.png"),
-        (5, "geppo_f5_anticipation.png"),
-        (6, "geppo_f6_impact_stomp.png"),
-        (8, "geppo_f8_wind_blast.png"),
-        (14, "geppo_f14_ascent_drag.png"),
-        (25, "geppo_f25_apex_float.png"),
+        (0,  "geppo_f0_neutral.png"),
+        (2,  "geppo_f2_anticipation_coil.png"),
+        (4,  "geppo_f4_explosive_stomp.png"),
+        (5,  "geppo_f5_post_impact.png"),
+        (8,  "geppo_f8_ascent_drag.png"),
+        (12, "geppo_f12_mid_ascent.png"),
+        (18, "geppo_f18_apex_hangtime.png"),
+        (24, "geppo_f24_descent.png"),
         (30, "geppo_f30_loop_seam.png"),
     ]
 
@@ -734,7 +780,8 @@ def render_visual_verification(scene, exports_dir):
         out_path = os.path.join(exports_dir, fname)
         scene.render.filepath = out_path
         bpy.ops.render.render(write_still=True)
-        print(f"[Render Test] Frame {f_num} rendered -> {out_path}")
+        print(f"[Render] Frame {f_num} → {out_path}")
+
 
 if __name__ == "__main__":
     generate_geppo_animation()
