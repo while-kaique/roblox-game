@@ -1,3 +1,10 @@
 # Tools and executables
 tools/
 *.zip
+build/
+__pycache__/
+*.blend1
+roblox.yml
+.env
+assets/models/raw/
+assets/models/work/

@@ -1,0 +1,18 @@
+{
+	"categories": ["tiro", "explosao", "passos", "vento", "impacto", "ui", "magia", "ambiente"],
+	"sounds": [
+		{
+			"name": "geppo",
+			"category": "vento",
+			"assetId": 96347429008558,
+			"file": null,
+			"tags": ["geppo", "stomp", "ar", "pulo"],
+			"volume": 1.4,
+			"playbackSpeed": 1.05,
+			"pitchJitter": 0,
+			"effects": {
+				"Equalizer": { "HighGain": 0, "MidGain": 5, "LowGain": 5, "Priority": 2 }
+			}
+		}
+	]
+}

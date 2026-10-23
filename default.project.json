@@ -1,0 +1,36 @@
+{
+	"name": "BabauPiece",
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"Shared": {
+				"$className": "Folder",
+				"$ignoreUnknownInstances": true,
+				"GeppoConfig": { "$path": "src/shared/GeppoConfig.luau" },
+				"GeppoState": { "$path": "src/shared/GeppoState.luau" },
+				"GeppoVFX": { "$path": "src/shared/GeppoVFX.luau" },
+				"JumpPhysics": { "$path": "src/shared/JumpPhysics.luau" },
+				"SoundCatalog": { "$path": "src/shared/SoundCatalog.luau" },
+				"SoundLibrary": { "$path": "src/shared/SoundLibrary.luau" },
+				"VFXUtil": { "$path": "src/shared/VFXUtil.luau" },
+				"VFXBlocks": { "$path": "src/shared/VFXBlocks.luau" },
+				"UI": { "$path": "src/shared/UI" }
+			},
+			"VFXLibrary": {
+				"$path": "assets/vfx"
+			}
+		},
+		"StarterPlayer": {
+			"StarterCharacterScripts": {
+				"GeppoController": {
+					"$path": "src/client/GeppoController.client.luau"
+				}
+			},
+			"StarterPlayerScripts": {
+				"GeppoHUD": {
+					"$path": "src/client/GeppoHUD.client.luau"
+				}
+			}
+		}
+	}
+}

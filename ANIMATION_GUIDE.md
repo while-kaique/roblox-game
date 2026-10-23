@@ -237,18 +237,14 @@ t=0.55s  │ Animação corporal completa (isAnimating = false)
 
 ### Scripts do Projeto
 
-* **[GeppoClient.luau](animations/scripts/GeppoClient.luau) — v3.0 Cinematic:**
-  * Controla o pulo duplo no ar (`Spacebar` em queda livre)
-  * 10 Motor6D joints animados (waist, neck, 2 hips, 2 knees, 2 shoulders, 2 elbows)
-  * 3 fases de animação corporal (antecipação → stomp → recuperação)
-  * VFX completo: starburst + wind streaks + 3 shockwave rings + highlight
-  * SFX: Geppo sound com EqualizerSoundEffect
-  * Impulso direcional (WASD)
+Sincronizados pelo Rojo (v3.1 — números, regras e efeitos separados):
 
-* **[GeppoVFX.luau](animations/scripts/GeppoVFX.luau) — v3.0 Module:**
-  * Módulo reutilizável para VFX do Geppo
-  * `GeppoVFX.Fire(character, footPart)` — dispara tudo sincronizado
-  * `GeppoVFX.PlayGeppoWithVFX(animTrack, character, footPart)` — com AnimationTrack
+* **[GeppoController.client.luau](src/client/GeppoController.client.luau)** → `StarterCharacterScripts.GeppoController`
+  * Input (`Spacebar` no ar) + 10 Motor6D joints em 3 fases (antecipação → stomp → recuperação)
+  * Publica o atributo `GeppoCharges` no personagem (lido pelo HUD)
+* **[GeppoConfig.luau](src/shared/GeppoConfig.luau)** — cargas, cooldown, impulsos, frame de impacto
+* **[GeppoState.luau](src/shared/GeppoState.luau)** — regras puras (testadas em `tests/GeppoState.spec.luau`)
+* **[GeppoVFX.luau](src/shared/GeppoVFX.luau)** — `GeppoVFX.Fire(character, footPart)`: starburst + wind streaks + 3 rings + highlight + som (`SoundLibrary.play("geppo")`). Usa `VFXUtil`, compatível com o Phase Freeze.
 
 ---
 
