@@ -32,6 +32,12 @@ Sem o plugin do Rojo conectado: `rojo build scripts/mcp-sync.project.json -o bui
 - **Enum é `Enum.ParticleOrientation`**, não `ParticleEmitterOrientation` (o v3.0 do Geppo quebrava por isso; o selene pega se `roblox.yml` estiver atualizado — `check.ps1` gera se faltar).
 - Motor6D no R15 vive **dentro da parte filha** (`RightUpperLeg.RightHip`), nunca em `RightFoot.Parent`.
 - Comparação de tempo com float: use tolerância (`1.22 - 1 = 0.2199999…`). Ver `GeppoState.canJump`.
+- `JumpRequest` repete enquanto o Espaço/botão está apertado: não serve para contar toques (um
+  pulo comum virava Geppo). Teclado/controle: `InputBegan` (uma borda por toque); celular:
+  `JumpRequest` com pausa mínima entre pedidos. Ver `GeppoController`.
+- Movimento em linha reta "sem gravidade" por um tempo: `LinearVelocity` (World, MaxForce
+  infinito) ligado/desligado, não setar velocidade a cada frame. Ao soltar, defina a velocidade
+  que sobra (senão o Humanoid freia ou o embalo cheio vaza para a próxima ação).
 - `table.freeze` só congela o 1º nível.
 - Lune `require` é relativo ao arquivo (`"../src/shared/X"`); módulos testados não podem dar `require(script.Parent...)`.
 - Rokit instala as ferramentas em `%USERPROFILE%\.rokit\bin` (já no PATH do usuário; em shells antigos, prefixe o PATH como o `check.ps1` faz).

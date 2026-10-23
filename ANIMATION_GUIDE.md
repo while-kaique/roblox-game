@@ -1,273 +1,277 @@
-# 🎬 Guia Completo de Animação 3D & VFX (Roblox R15 + Blender)
+# 🎬 Guia de Animação R15 — Babau Piece (Blender por código → Studio → Roblox)
 
-Este documento descreve o fluxo de trabalho profissional para criar, editar, programar e importar animações 3D no padrão **Roblox R15** usando o **Blender** e o **Roblox Studio**.
+O método que usamos (outubro/2026): as poses são **escritas em Python** (graus por junta, nos
+eixos do Roblox), conferidas **ao vivo no Blender** pelo MCP, viram uma **KeyframeSequence**
+montada direto no Studio, são **testadas tocando no personagem real** e **publicadas pela Open
+Cloud** — sem FBX, sem Animation Editor e sem nenhum clique do usuário.
 
----
-
-## 📌 Sumário
-1. [Estrutura do Rig R15](#1-estrutura-do-rig-r15)
-2. [Fluxo de Produção (Pipeline)](#2-fluxo-de-produção-pipeline)
-3. [Criando Animações no Blender](#3-criando-animações-no-blender)
-4. [Princípios de Animação Anime de Alto Impacto](#4-princípios-de-animação-anime-de-alto-impacto)
-5. [Exportando do Blender (Configurações do FBX)](#5-exportando-do-blender-configurações-do-fbx)
-6. [Importando no Roblox Studio](#6-importando-no-roblox-studio)
-7. [VFX In-Game: Técnicas do Twist VFX](#7-vfx-in-game-técnicas-do-twist-vfx)
-8. [Sincronizando Animação Corporal + VFX + SFX](#8-sincronizando-animação-corporal--vfx--sfx)
-9. [Assets e Sons](#9-assets-e-sons)
+Exemplo completo e vivo: o Geppo ([docs/GEPPO.md](docs/GEPPO.md),
+`animations/scripts/generate_geppo_anims.py`). Lições curtas para o agente: skill
+`.claude/skills/roblox-animation`.
 
 ---
 
-## 1. Estrutura do Rig R15
+## Sumário
+1. [Por que este método](#1-por-que-este-método)
+2. [Ambiente](#2-ambiente)
+3. [O rig R15 do jogo](#3-o-rig-r15-do-jogo)
+4. [Eixos e sinais](#4-eixos-e-sinais)
+5. [Planejar a animação](#5-planejar-a-animação)
+6. [Escrever o gerador](#6-escrever-o-gerador)
+7. [Revisar no Blender](#7-revisar-no-blender)
+8. [Importar no Studio](#8-importar-no-studio)
+9. [Testar no jogo](#9-testar-no-jogo)
+10. [Publicar](#10-publicar)
+11. [Integrar no código](#11-integrar-no-código)
+12. [Checklist de entrega](#12-checklist-de-entrega)
+13. [Regras de qualidade](#13-regras-de-qualidade)
+14. [Problemas e soluções](#14-problemas-e-soluções)
 
-O padrão R15 divide o corpo do personagem em **15 partes articuladas**. Cada osso tem um nome fixo que o Roblox Studio exige para reconhecer o movimento:
+---
+
+## 1. Por que este método
+
+- **O rig do jogo é simples de descrever por números.** O R15 do Babau Piece usa
+  `AnimationConstraint` (não Motor6D) com RigAttachments de rotação identidade. Então o
+  `Pose.CFrame` de cada junta numa KeyframeSequence é só "a rotação da junta nos eixos do
+  HumanoidRootPart, com pivô no attachment". Escrevendo as poses nesses eixos, o que se vê no
+  Blender é exatamente o que toca no jogo (conferido: `CFrame.Angles(0.3, 0.5, 0.7)` sai igual
+  nos dois lados).
+- **Pose em tabela = iteração rápida.** Ajustar um braço é mudar um número e rodar de novo; o
+  espelho (lado esquerdo, variante alternada) é uma função, não retrabalho.
+- **Ver antes de entregar.** Cada etapa tem um "olho": `look` do Blender, screenshot do
+  boneco de preview no Studio, foto congelada no personagem real e medição por quadro.
+- **Zero cliques do usuário.** Blender e Studio pelo MCP, publicação pela chave Open Cloud.
+
+## 2. Ambiente
+
+| Peça | Onde / como |
+|---|---|
+| Blender 5.2 | `C:\Program Files\Blender Foundation\Blender 5.2\blender.exe`. Se o MCP `blender` não conectar (`get_addon_status`), abra o Blender: o addon sobe o servidor sozinho |
+| Roblox Studio | Babau Piece aberto, MCP `robloxstudio` conectado |
+| Rojo | `rojo serve` sincroniza `src/` (confira a versão no Studio antes de testar — §14) |
+| Chave Open Cloud | `.env` (ignorado pelo git): `ROBLOX_API_KEY`, `ROBLOX_CREATOR_ID=3465482970`. Escopo `asset` read+write |
+| Python | stdlib apenas (`scripts/opencloud_upload.py`, `anim_to_luau.py`) |
+
+Arquivos do pipeline:
+
+| Arquivo | Função |
+|---|---|
+| `animations/rig/r15_rig.json` | Rig R15 real medido no Studio: pivô de cada junta, centro/tamanho de cada parte |
+| `animations/scripts/r15_lib.py` | `build_rig()`, `key()`, `export_json()`, `render_frames()`, conversões de eixo |
+| `animations/scripts/generate_template_anim.py` | Modelo de gerador (copie para começar) |
+| `animations/scripts/generate_geppo_anims.py` | Gerador real com várias animações, `espelhar()` e `trocar_membros()` |
+| `animations/exports/<nome>.anim.json` | Saída: Pose.CFrame de cada junta em cada quadro + markers |
+| `studio-tools/anim_import.luau` | Monta `ServerStorage.AnimacoesGeradas.<nome>` e posa `Workspace.AnimPreview` |
+| `animations/scripts/anim_to_luau.py` | Gera o script de import pronto para o `execute_luau` |
+| `scripts/opencloud_upload.py` | Publica o `.rbxm` como Animation e devolve o assetId |
+
+> ⚠️ Nunca rode `bpy.ops.wm.read_factory_settings` no Blender aberto: ele recarrega os addons
+> e derruba o servidor do MCP (aí é fechar o processo e abrir de novo). O `r15_lib` limpa a
+> cena apagando objetos.
+
+## 3. O rig R15 do jogo
 
 ```mermaid
 graph TD
-    Root["HumanoidRootPart (Raiz Invisível)"] --> LT["LowerTorso (Pelve)"]
-    LT --> UT["UpperTorso (Peito)"]
-    LT --> LUL["LeftUpperLeg"] --> LLL["LeftLowerLeg"] --> LF["LeftFoot"]
-    LT --> RUL["RightUpperLeg"] --> RLL["RightLowerLeg"] --> RF["RightFoot"]
-    UT --> HD["Head (Cabeça)"]
-    UT --> LUA["LeftUpperArm"] --> LLA["LeftLowerArm"] --> LH["LeftHand"]
-    UT --> RUA["RightUpperArm"] --> RLA["RightLowerArm"] --> RH["RightHand"]
+    HRP["HumanoidRootPart"] -->|Root| LT["LowerTorso"]
+    LT -->|Waist| UT["UpperTorso"]
+    UT -->|Neck| HD["Head"]
+    UT -->|RightShoulder| RUA["RightUpperArm"] -->|RightElbow| RLA["RightLowerArm"] -->|RightWrist| RH["RightHand"]
+    UT -->|LeftShoulder| LUA["LeftUpperArm"] -->|LeftElbow| LLA["LeftLowerArm"] -->|LeftWrist| LH["LeftHand"]
+    LT -->|RightHip| RUL["RightUpperLeg"] -->|RightKnee| RLL["RightLowerLeg"] -->|RightAnkle| RF["RightFoot"]
+    LT -->|LeftHip| LUL["LeftUpperLeg"] -->|LeftKnee| LLL["LeftLowerLeg"] -->|LeftAnkle| LF["LeftFoot"]
 ```
 
-### Motor6D Joints no R15
+- No Blender, **cada bone tem o nome da junta** (Root, Waist, RightShoulder…), com a cabeça do
+  bone no pivô real (do `r15_rig.json`). O nome da parte filha fica em `bone["part"]`.
+- O `build_rig()` também cria blocos do corpo presos aos bones (cabeça amarela com "nariz"
+  marcando a frente), para enxergar a pose.
+- Escala 1:1 (1 unidade = 1 stud), pés em z = 0, personagem olhando para −Y no Blender
+  (a vista frontal mostra o rosto). Conversão: `(x, y, z)` Roblox = `(−x, z, y)` Blender.
+- O rig foi medido de `Players:CreateHumanoidModelFromDescription(HumanoidDescription.new(), R15)`.
+  Se o jogo mudar de corpo, meça de novo e atualize o JSON.
 
-> **⚠️ REGRA CRÍTICA:** No Roblox R15, cada Motor6D joint vive **DENTRO da parte FILHA**, não da parte pai.
-> Exemplo: `RightHip` está dentro de `RightUpperLeg`, **não** dentro de `LowerTorso`.
+## 4. Eixos e sinais
 
-```lua
--- ✅ CORRETO:
-local rightHip = character:WaitForChild("RightUpperLeg"):FindFirstChild("RightHip")
+Rotação de cada junta em **graus, igual a `CFrame.Angles(rx, ry, rz)`** (Rx·Ry·Rz), no espaço
+da junta = HumanoidRootPart em repouso: **X direita, Y cima, −Z frente**.
 
--- ❌ ERRADO (retorna nil):
-local rightHip = rightFoot.Parent:FindFirstChild("RightUpperLeg")
--- (RightFoot.Parent = RightLowerLeg, que NÃO tem RightUpperLeg como filho)
-```
-
-**Tabela completa de joints:**
-
-| Joint Name | Vive dentro de | Conecta |
+| Junta | Eixo | Efeito |
 |---|---|---|
-| `Waist` | UpperTorso | LowerTorso → UpperTorso |
-| `Neck` | Head | UpperTorso → Head |
-| `RightHip` | RightUpperLeg | LowerTorso → RightUpperLeg |
-| `LeftHip` | LeftUpperLeg | LowerTorso → LeftUpperLeg |
-| `RightKnee` | RightLowerLeg | RightUpperLeg → RightLowerLeg |
-| `LeftKnee` | LeftLowerLeg | LeftUpperLeg → LeftLowerLeg |
-| `RightShoulder` | RightUpperArm | UpperTorso → RightUpperArm |
-| `LeftShoulder` | LeftUpperArm | UpperTorso → LeftUpperArm |
-| `RightElbow` | RightLowerArm | RightUpperArm → RightLowerArm |
-| `LeftElbow` | LeftLowerArm | LeftUpperArm → LeftLowerArm |
+| Ombro / quadril | X+ | membro vai para a **frente** (90 = horizontal à frente, 180 = para cima) |
+| Ombro direito | Z+ | abre o braço pelo lado (ombro **esquerdo: Z−**) |
+| Quadril | Z | abre a perna (direita Z+, esquerda Z−) |
+| Cotovelo | X+ | dobra o antebraço para a frente |
+| Joelho | X− | dobra a perna para trás |
+| Tornozelo | X− | aponta a ponta do pé para baixo |
+| Pescoço | X+ | olha para cima; **Y+ olha para a esquerda** do personagem |
+| Waist | Y | torce o tronco; Z inclina de lado |
+| Root | X− | inclina o corpo todo para a **frente**; **Z− para a direita** |
+| Root (posição) | `((rx, ry, rz), (px, py, pz))` | move o corpo todo (py < 0 agacha) |
 
----
+> **Inclinar o tronco leva os membros pendurados junto.** Root X−38 (frente) joga braços e
+> pernas 38° para trás; Root Z−38 (direita) joga para a esquerda. Some ou subtraia isso no
+> ombro/quadril. Exemplo real: para o braço esquerdo "empurrar para baixo/fora" a ~30° com o
+> tronco inclinado 46°, o ombro esquerdo ficou em Z **+12** (fechando), não em Z−20.
 
-## 2. Fluxo de Produção (Pipeline)
+## 5. Planejar a animação
 
-```
-[ Blender: Modelagem & Keyframing ]
-                │
-                ▼ (Exportar .FBX)
-[ animations/exports/nome_da_animacao.fbx ]
-                │
-                ▼ (Import FBX no Animation Editor)
-[ Roblox Studio: Publicar na Roblox -> AnimationId ]
-                │
-                ▼ (Tocar via Script + VFX + SFX)
-[ In-Game: Humanoid:LoadAnimation() + VFX Procedurais + EqualizerSoundEffect ]
-```
+1. **Parta da física, não do olho.** Meça no jogo quanto a ação dura (ex.: Geppo para cima
+   ImpulseY 67,4 com gravidade 196,2 → topo em 0,34 s; dash 0,30 s; próximo Geppo pode vir em
+   0,22 s). A pose principal tem que caber nesse tempo.
+2. **Fases** (60 fps): neutro → **antecipação** (oposta à ação, curta) → **impulso** (1–3
+   quadros de "snap") → **pose viva** (continua se mexendo, nunca congela) → **soltar**.
+3. **Markers** no plano: `Impacto` (VFX/SFX) e `Soltar` (onde a trilha começa a sumir).
+4. Mostre o plano ao usuário como tabela tempo × pose quando a animação for nova e grande.
+   Exemplo (Geppo cima):
 
----
-
-## 3. Criando Animações no Blender
-
-### Método A: Automatizado via Python (`bpy`)
-Scripts Python geram poses exatas e curvas matemáticas:
-📁 `animations/scripts/generate_geppo_anim.py` (v3.0 — Cinematic Edition)
-
-```powershell
-& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b -P "animations/scripts/generate_geppo_anim.py"
-```
-
-### Método B: Manualmente pela Interface do Blender
-1. Abra o Blender com o Rig R15 carregado.
-2. Mude para a aba **Animation** no topo.
-3. Selecione o esqueleto e entre em **Pose Mode** (`Ctrl + Tab`).
-4. Selecione os ossos, use rotação (`R`) ou translação (`G`) e aperte `I` para inserir o keyframe de rotação/posição.
-5. Abra o **Graph Editor** para ajustar as curvas de aceleração e desaceleração.
-
----
-
-## 4. Princípios de Animação Anime de Alto Impacto
-
-### As 4 Fases de Movimento (GEPPO v3.0)
-
-1. **Antecipação (Anticipation) — Frames 0-2:**
-   * Joelhos sobem violentamente ao peito (compressão de mola)
-   * Braços cruzam sobre o corpo acumulando energia
-   * Torso comprime e cabeça baixa (olhando para os pés)
-   * Corpo desce ~0.30 studs (compressão visível)
-
-2. **Impacto Explosivo (Explosive Stomp) — Frames 2-4:**
-   * Transição em **2 frames** com tangentes Bezier ultra-steep
-   * Perna direita PISÃO violento para baixo (extensão total)
-   * Braços arremessados para baixo/trás (impulso tipo wing push)
-   * Torso crunch agressivo para frente (absorvendo impacto)
-   * Cabeça SNAPS UP dramaticamente (olhando para o céu)
-
-3. **Ascensão + Air Drag (Follow-Through) — Frames 5-18:**
-   * Corpo sobe rapidamente; pés/braços arrastados pelo vento
-   * Dedos dos pés apontam para baixo (wind drag)
-   * Braços trailing para trás no fluxo de ar
-   * **Foot-planting**: pé direito mantém posição Y baixa enquanto root sobe
-
-4. **Recuperação e Apex (Ease-Out) — Frames 18-30:**
-   * Hang-time no apex (velocidade zero, corpo flutua)
-   * Transição suave de volta para a pose de queda
-   * Curvas Auto-Clamped para desaceleração gravitacional
-   * **Frame 30 = Frame 0** (loop perfeito)
-
-### Insights do Eduardo Bomerich (Opus 5.5 + Blender)
-
-| Insight | Aplicação no Geppo |
-|---|---|
-| **IA é ruim para humanoides** | Keyframes manuais/matemáticos, não mocap |
-| **Foot-planting IK** | Pé trava no ponto de impacto enquanto corpo sobe |
-| **Weight painting falha em juntas** | Usar R15 joints pré-definidos (sem skinning livre) |
-| **Vertex Groups errados** | Verificar path dos joints (bug do rightHip = nil) |
-
----
-
-## 5. Exportando do Blender (Configurações do FBX)
-
-* **Include:** `Selected Objects` (selecione apenas a Armature).
-* **Transform:**
-  * **Forward:** `-Z Forward`
-  * **Up:** `Y Up`
-* **Armature:**
-  * Desmarque: `Add Leaf Bones` *(evita ossos fantasmas)*.
-* **Bake Animation:**
-  * `Bake Animation`: Marcado.
-  * `Key All Bones`: Marcado.
-  * `Simplify`: `0.0` *(preserva 100% da fidelidade)*.
-
----
-
-## 6. Importando no Roblox Studio
-
-1. Abra o seu jogo (`Jogodokaique.rbxl`) no **Roblox Studio**.
-2. Abra o menu **Plugins** > **Animation Editor**.
-3. Selecione o modelo do seu personagem (ou um Dummy R15 gerado pelo *Rig Builder*).
-4. No Animation Editor, clique no ícone de três pontinhos (`...`) > **Import** > **From FBX**.
-5. Selecione o arquivo exportado (ex: `animations/exports/geppo_skywalk.fbx`).
-6. Revise a animação na linha do tempo.
-7. Clique em `...` > **Publish to Roblox** e copie o **ID numérico** gerado (ex: `rbxassetid://123456789`).
-
----
-
-## 7. VFX In-Game: Técnicas do Twist VFX
-
-Referência: **Twist VFX** — *"How to Make Slash VFX | Roblox Studio"*
-
-### 7.1 LightEmission = 1 (Anti-bordas pretas)
-```lua
-particles.LightEmission  = 1    -- Ignora sombras, texturas transparentes ficam limpas
-particles.LightInfluence = 0    -- Não reage à iluminação ambiente
-```
-
-### 7.2 Partículas Congeladas no Ar (Fragmentos)
-```lua
-sparks.Speed       = NumberRange.new(0.01, 0.01)  -- Velocidade ~zero = congelada
-sparks.Orientation = Enum.ParticleEmitterOrientation.VelocityPerpendicular
-sparks.RotSpeed    = NumberRange.new(400, 500)     -- Giro extremo para Lifetime curto
-```
-
-### 7.3 Explosão Violenta que Para (Vento)
-```lua
-streaks.Speed = NumberRange.new(60, 80)       -- Velocidade alta = explosão
-streaks.Drag  = 7                              -- Atrito alto = para instantaneamente
-streaks.Orientation = Enum.ParticleEmitterOrientation.VelocityParallel  -- Estica
-```
-
-### 7.4 Highlight Senoidal no Personagem
-```lua
--- EasingStyle.Circular = brilho pulsa como senoide, não troca de cor linear/dura
-TweenService:Create(highlight,
-    TweenInfo.new(0.07, Enum.EasingStyle.Circular, Enum.EasingDirection.Out),
-    { FillTransparency = 0.35, OutlineTransparency = 0.15 }
-):Play()
-```
-
-### 7.5 ZOffset para Controlar Z-Sorting
-```lua
-particles.ZOffset = 0.5   -- Controla qual camada renderiza por cima
--- Use diferenças de 0.001 para evitar que partículas cortem malhas 3D
-```
-
-### 7.6 Pegadinhas do Roblox Studio
-- ❌ **Não rotacione Attachments em exatos 180°** → quebra renderização de `VelocityPerpendicular`
-- ❌ **Beams cruzados** → Z-Sorting do Roblox falha (aceitar: em alta velocidade ninguém percebe)
-- ✅ **Speed ≠ 0** para `VelocityPerpendicular` → senão partícula desaparece (use `0.01`)
-
----
-
-## 8. Sincronizando Animação Corporal + VFX + SFX
-
-### Timeline do Geppo v3.0 (~24fps in-game equivalente)
-
-```
-t=0.00s  │ Impulso físico (AssemblyLinearVelocity)
-         │ FASE 0: Antecipação (joelhos sobem, torso comprime)
-         │
-t=0.05s  │ FASE 1: Stomp Explosivo (pernas ↓, braços ↓, cabeça ↑)
-         │ SFX: Geppo Sound com EqualizerSoundEffect
-         │ VFX: Core Flash + 8 Spikes + 4 Diag + Sparks Congeladas
-         │ VFX: Ring #1 expande (dur 0.50s, ∅ 18 studs)
-         │ VFX: Wind Streaks (Speed=75 Drag=7)
-         │ VFX: Highlight Pulse (Circular easing)
-         │
-t=0.08s  │ VFX: Ring #2 (dur 0.65s, ∅ 22 studs)
-         │
-t=0.15s  │ FASE 2: Recuperação (todos joints voltam suavemente)
-         │ VFX: Ring #3 (dur 0.80s, ∅ 27 studs)
-         │
-t=0.55s  │ Animação corporal completa (isAnimating = false)
-```
-
-### Scripts do Projeto
-
-Sincronizados pelo Rojo (v3.1 — números, regras e efeitos separados):
-
-* **[GeppoController.client.luau](src/client/GeppoController.client.luau)** → `StarterCharacterScripts.GeppoController`
-  * Input (`Spacebar` no ar) + 10 Motor6D joints em 3 fases (antecipação → stomp → recuperação)
-  * Publica o atributo `GeppoCharges` no personagem (lido pelo HUD)
-* **[GeppoConfig.luau](src/shared/GeppoConfig.luau)** — cargas, cooldown, impulsos, frame de impacto
-* **[GeppoState.luau](src/shared/GeppoState.luau)** — regras puras (testadas em `tests/GeppoState.spec.luau`)
-* **[GeppoVFX.luau](src/shared/GeppoVFX.luau)** — `GeppoVFX.Fire(character, footPart)`: starburst + wind streaks + 3 rings + highlight + som (`SoundLibrary.play("geppo")`). Usa `VFXUtil`, compatível com o Phase Freeze.
-
----
-
-## 9. Assets e Sons
-
-| Asset | ID | Uso |
+| Tempo | Etapa | Pose |
 |---|---|---|
-| **Geppo Sound** | `rbxassetid://96347429008558` | Som do pisão no ar |
-| **Dash Sound** | `rbxassetid://128746179989349` | Som do dash (futuro) |
-| **VFX Model** | Asset ID `137725942081281` | Modelo de referência do Marketplace |
-| **Spark Texture** | `rbxassetid://296874871` | Partículas nítidas de faísca |
+| 0,00 | entrada | da pose atual, fade 0,05 s |
+| 0,05 | encolher (marker Impacto) | joelhos sobem, tronco curva, punho perto do ombro |
+| 0,10 | impulso | perna direita estica para baixo, esquerda dobrada no alto, braço direito para o alto |
+| 0,20 | subida | mesma pose, ainda indo (braço alcança mais) |
+| 0,30 | soltar (marker) | começa a sumir e a queda assume |
 
-### Configuração do Som do Geppo
-```lua
-local eq = Instance.new("EqualizerSoundEffect")
-eq.HighGain  = 0     -- Sem boost nos agudos
-eq.LowGain   = 5     -- Boost nos graves (impacto)
-eq.MidGain   = 5     -- Boost nos médios (presença)
-eq.Priority  = 2     -- Prioridade de processamento
-eq.Parent    = sound
+## 6. Escrever o gerador
+
+Copie `generate_template_anim.py` (uma animação) ou siga `generate_geppo_anims.py` (várias):
+
+```python
+NEUTRO = {j: (0, 0, 0) for j in JUNTAS}
+NEUTRO["Root"] = ((0, 0, 0), (0, 0, 0))
+
+CIMA = {
+    0: NEUTRO,
+    3: {"Root": ((-8, 0, 0), (0, 0.15, 0)), "RightShoulder": (75, 0, 10), "RightElbow": (70, 0, 0), ...},
+    6: {"Neck": (28, 0, 0), "RightShoulder": (158, 0, 12), "LeftHip": (85, 0, 0), "LeftKnee": (-100, 0, 0), ...},
+    12: {...},
+    18: {...},  # SOLTAR
+}
+ANIMS = {"GeppoCima": CIMA, "GeppoCimaB": espelhar(CIMA), ...}
 ```
 
----
+- `key(arm, frame, poses)` grava em **quaternion** (não Euler) — sem "rebolado" no meio.
+- Junta omitida num quadro não ganha chave ali. Posição só com a forma `((rot), (pos))` —
+  use-a em todas as chaves daquela junta.
+- `espelhar(keys)`: lado oposto (troca Right↔Left, inverte Y/Z e X da posição).
+  `trocar_membros(poses)`: troca só braços/pernas, mantendo tronco e cabeça (variante
+  alternada de um movimento lateral).
+- O último quadro repete o de `Soltar` (a trilha some por fade antes de acabar).
+- `export_json(arm, nome, priority=..., markers={"Impacto": 3, "Soltar": 18})` amostra
+  todo quadro (Easing Linear no Roblox = fiel às curvas Bezier do Blender) e omite juntas em
+  identidade.
 
-*Criado para o desenvolvimento contínuo do projeto Roblox.*
-*Atualizado com técnicas do Twist VFX e Eduardo Bomerich (out/2026).*
+## 7. Revisar no Blender
+
+- **Ao vivo (preferido):**
+  `exec(open(p, encoding="utf-8").read(), {"__file__": p, "SO": "GeppoDireita"})` pelo
+  `execute_blender_code`, depois `look` com `mode="frames"`, `frames=[3, 6, 12, 18]`.
+- **Escolha a vista pela pose:** inclinação para a frente → lateral (`[-1, -0.05, 0.1]`);
+  inclinação lateral → `front`; geral → 3/4 (`[-0.9, -0.6, 0.15]`). Na vista frontal a
+  direita do personagem aparece à **esquerda** da imagem.
+- **Lote/headless:** `blender -b --factory-startup -P animations/scripts/<gerador>.py` gera
+  todos os JSONs e renders em `animations/exports/<nome>_fNN.png` (apague os PNGs depois).
+- Pergunte para cada quadro: o membro aponta para onde o plano diz? Algo some atrás da
+  cabeça? A transição entre quadros-chave passa por dentro do corpo?
+
+## 8. Importar no Studio
+
+1. Servidor local em background (o `execute_luau` roda como plugin e pode ler localhost):
+   `python -m http.server 8765 --bind 127.0.0.1 --directory animations/exports`
+2. `python animations/scripts/anim_to_luau.py <nome> --t 0.2` → `build/anim_import_<nome>.luau`
+   → Read → `execute_luau` (modo edição). Cria `ServerStorage.AnimacoesGeradas.<nome>` com os
+   markers e posa `Workspace.AnimPreview` no tempo `--t`.
+3. `selection view` em `Workspace.AnimPreview` → `capture_screenshot`. Repita com outros `--t`.
+   No fim, `--mode clear` e pare o servidor.
+
+O preview posa por **cinemática direta** com as partes ancoradas
+(`parte1 = parte0 · Attachment0 · Pose · Attachment1⁻¹`): em modo edição o
+AnimationConstraint não é resolvido (é física) e escrever `Transform` não mexe nada.
+
+## 9. Testar no jogo
+
+1. `solo_playtest` → `eval_server_runtime`: `player:LoadCharacter()` (o Babau só cria o
+   personagem depois do menu) e clona a KeyframeSequence para ReplicatedStorage.
+2. Cliente: `KeyframeSequenceProvider:RegisterKeyframeSequence(seq)` → id temporário. O
+   GeppoController aceita esse id pelo atributo `GeppoAnim<Tipo>Teste` no personagem.
+3. **Meça, não só olhe.** Amostrador no Heartbeat gravando posição, velocidade,
+   `TimePosition@WeightCurrent` das trilhas e o ângulo de um membro por quadro (Δ°). Régua
+   usada: impulso proposital ~40°/quadro; transição entre Geppos ≤ ~35°/quadro.
+4. **Foto da pose no personagem real:** ancore o root, `track.TimePosition = t;
+   track:AdjustSpeed(0)`, desligue as ScreenGuis do PlayerGui e prenda a câmera com
+   `RunService:BindToRenderStep(nome, Enum.RenderPriority.Last.Value + 10, ...)` (a câmera do
+   Babau sobrescreve qualquer outra coisa).
+5. Teclado: `simulate_keyboard_input` (chamadas seguidas saem ~0,2 s uma da outra). Antes,
+   solte W/A/S/D (o simulador às vezes deixa teclas presas) e confira `UIS:IsKeyDown`.
+
+## 10. Publicar
+
+```bash
+# no Studio (MCP): export_rbxm de ServerStorage.AnimacoesGeradas.<nome> → build/<nome>.rbxm
+python scripts/opencloud_upload.py build/<nome>.rbxm --type Animation --name "<nome>" --description "..."
+# última linha = assetId; moderação volta "Approved" em segundos
+```
+
+- Tem que ser na **conta dona do jogo** (3465482970), senão a animação não toca.
+- O `upload_asset` do MCP falha com "Unknown error": use o script.
+- Chave expirada/sem permissão: veja `docs/GEPPO.md`/memória — página certa
+  `create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab` (Assets API read+write).
+
+## 11. Integrar no código
+
+Padrão do `GeppoController` (copie para habilidades novas):
+
+- **Ids no config** (`GeppoConfig.Animations`), nunca soltos no código.
+- **Pré-carregar ao nascer**: `ContentProvider:PreloadAsync({animation...})` — sem isso o
+  primeiro uso sai sem animação (também no jogo publicado).
+- **Duas trilhas por animação, alternadas**: `Play` numa trilha que já toca volta ao quadro 0
+  na hora (corte). Encadeado = crossfade da trilha atual para a nova (fade 0,10 encadeado;
+  0,05 vindo do nada).
+- **Marker `Soltar` → `track:Stop(fade)`**: a volta é a mistura com a animação de baixo (a
+  queda do Animate tem braços erguidos), não um quadro neutro.
+- **Prioridade** Action2 para habilidade por cima de correr/cair; parar com fade ao pousar.
+- **VFX/SFX** no tempo do marker `Impacto` (ou `ImpactDelay` igual), no membro que faz a ação.
+- Pose lateral precisa do corpo de lado para o movimento: desligue `AutoRotate` e gire o root
+  para a frente da câmera enquanto durar.
+
+## 12. Checklist de entrega
+
+- [ ] Plano por fase/tempo coerente com a física medida
+- [ ] Todas as poses conferidas no Blender (vista certa para cada uma)
+- [ ] Preview no Studio + foto congelada no personagem real
+- [ ] Medição no playtest (sem picos estranhos de Δ°, sem cortes de peso)
+- [ ] Publicada pela Open Cloud, id no config, pré-carregada
+- [ ] `scripts/check.ps1 -Fix` → "Tudo verde"
+- [ ] Studio com a mesma versão dos arquivos (`#Source` = bytes do arquivo)
+- [ ] Playtest final sem ids de teste; logs sem erro (filtre por "attempt")
+- [ ] Lições novas na skill; documentação (`docs/`) atualizada; lembrar o usuário do Ctrl+S
+
+## 13. Regras de qualidade
+
+- **Impacto de anime**: antecipação curta e oposta, 1–3 quadros de snap, recuperação longa.
+- **Nada congela**: a pose principal continua indo (braço alcança mais, cabeça sobe mais).
+- **Caminho curto entre poses encadeadas**: na antecipação do Geppo o braço que estava no alto
+  só dobra o cotovelo (punho perto do ombro) em vez de descer inteiro — o pico caiu de 57°
+  para 34°/quadro.
+- **Leitura pela câmera**: braço colado na cabeça some atrás do cabelo — deixe ~110° no mundo.
+- **Compense a inclinação do tronco** nos membros (§4).
+- **Variação viva**: encadeados alternam lado (perna que empurra, braço que lidera).
+
+## 14. Problemas e soluções
+
+| Sintoma | Causa | Solução |
+|---|---|---|
+| Animação não mexe nada | Código animando `Motor6D.C0` | O rig é AnimationConstraint: use AnimationTrack |
+| Braço "rebola" no meio do movimento | Euler num bone inclinado | Quaternion (já é o padrão do `key()`) |
+| Ao terminar, braço desce e sobe de novo | Último quadro neutro ≠ animação de baixo | Marker `Soltar` + `Stop(fade)` |
+| Corte ao repetir rápido | `Play` reinicia a trilha | Duas trilhas + crossfade |
+| 1º uso sem animação | Asset ainda baixando | `PreloadAsync` ao nascer |
+| Preview no Studio parado | AnimationConstraint não resolve em edição | Preview por cinemática direta (já no `anim_import`) |
+| MCP do Blender caiu | `read_factory_settings` | Fechar e reabrir o Blender |
+| Peça do corpo na origem (headless) | `transform_apply` aplicou posição / pose não avaliada | `location=False` e `view_layer.update()` (já no `r15_lib`) |
+| Playtest com comportamento antigo | Rojo perdeu uma sincronização | Comparar `#Source` com o arquivo; `set_script_source` |
+| Erro não aparece no log | Filtro errado | Erros de script são "attempt to ..." |
+| Script de import gigante | JSON embutido (~30 KB) | Servidor local + `GetAsync` (padrão) |
+| Upload pelo MCP falha | `upload_asset` quebrado | `scripts/opencloud_upload.py` |

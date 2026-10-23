@@ -33,3 +33,6 @@ Toque o som no mesmo frame do impacto visual (ex.: `GeppoConfig.ImpactDelay`). P
 
 ## Lições
 - O som do Geppo é `geppo` (vento): EQ Low/Mid +5, High 0, PlaybackSpeed 1.05.
+- Passos (Babau Piece, `Client.Controllers.CorridaController` + `Shared.Corrida`, editados no Studio): passo avulso disparado por distância (3,15 studs a 16 studs/s) virava ~5 passos/s, mais alto que o laço de correr. Solução: laço de caminhada (`SOM_ANDAR_DURO` 74849259058998 concreto / `SOM_ANDAR_MACIO` 79517244477372 grama, 8 passos em 3,84 s) com crossfade contra o laço de corrida, escolhido por `FloorMaterial`. Volume casado pelo pico medido (`PlaybackLoudness`): grama 85, concreto 192, corrida 163.
+- Medir um som sem ouvir: no playtest, toque com volume 0.01 e amostre `PlaybackLoudness` por frame → duração, pico e cadência (picos/s). `preview_asset` de áudio costuma falhar.
+- No Babau Piece o personagem só nasce depois do menu: no playtest, `eval_server_runtime` → `player:LoadCharacter()`. `VirtualInputManager` não funciona no eval; use `simulate_keyboard_input`.

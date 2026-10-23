@@ -11,7 +11,8 @@ Este repo cuida de **parte** do jogo: Geppo (pulo no ar), VFX, som, UIKit, físi
   - `src/client/` → `StarterPlayer.*` (ver mapeamento no project.json)
 - `tests/` → specs em lune (só módulos puros). `studio-tools/` → scripts para rodar no Studio via MCP (não são sincronizados).
 - `assets/` → `audio/` (biblioteca + catalog.json), `vfx/` (blocos .rbxm → `ReplicatedStorage.VFXLibrary`), `models/`.
-- `animations/` → pipeline Blender (gerador Python, FBX, renders). `scripts/` → `check.ps1`, `opencloud_upload.py`.
+- `animations/` → pipeline Blender por código (rig R15 real, geradores, JSON → KeyframeSequence). Método completo: `ANIMATION_GUIDE.md`. `scripts/` → `check.ps1`, `opencloud_upload.py` (publica com a chave do `.env`).
+- `docs/` → estado e decisões de cada feature (`GEPPO.md`) e mudanças feitas só no Studio (`STUDIO-FORA-DO-REPO.md`). Atualize ao mexer na feature.
 - `tools/` (ignorado) → remodel/injeção antiga. **Obsoleto**, substituído pelo Rojo.
 
 ## Antes de entregar qualquer código

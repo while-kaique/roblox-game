@@ -1,0 +1,40 @@
+{
+	"_origem": "Players:CreateHumanoidModelFromDescription(HumanoidDescription.new(), R15) no Studio, 22/10/2026. Coordenadas do Roblox (studs) relativas ao HumanoidRootPart: X direita, Y cima, -Z frente. Juntas = AnimationConstraint com RigAttachments de rotação identidade (eixos da junta = eixos do root em repouso).",
+	"hipHeight": 2.1924,
+	"rootHalfHeight": 1,
+	"parts": {
+		"HumanoidRootPart": { "center": [0, 0, 0], "size": [2, 2, 1] },
+		"LowerTorso": { "center": [0, -0.8, 0], "size": [1.9914, 0.4007, 1.004] },
+		"UpperTorso": { "center": [0, 0.249, 0], "size": [1.9432, 1.698, 1.004] },
+		"Head": { "center": [0, 1.6738, 0], "size": [1.159, 1.182, 1.1606] },
+		"RightUpperArm": { "center": [1.4721, 0.4276, 0], "size": [1.0011, 1.2416, 1.0019] },
+		"RightLowerArm": { "center": [1.4721, -0.2021, 0], "size": [1.0011, 1.1175, 1.0019] },
+		"RightHand": { "center": [1.4721, -0.8659, 0], "size": [0.9843, 0.3158, 1.0283] },
+		"LeftUpperArm": { "center": [-1.4721, 0.4276, 0], "size": [1.0011, 1.2416, 1.0019] },
+		"LeftLowerArm": { "center": [-1.4721, -0.2021, 0], "size": [1.0011, 1.1175, 1.0019] },
+		"LeftHand": { "center": [-1.4721, -0.8659, 0], "size": [0.9843, 0.3158, 1.0283] },
+		"RightUpperLeg": { "center": [0.5, -1.4714, 0], "size": [0.9928, 1.3629, 0.9727] },
+		"RightLowerLeg": { "center": [0.5, -2.3339, 0], "size": [0.9928, 1.3007, 0.9728] },
+		"RightFoot": { "center": [0.5, -3.0364, 0], "size": [1.0089, 0.312, 1.0011] },
+		"LeftUpperLeg": { "center": [-0.5, -1.4714, 0], "size": [0.9928, 1.3629, 0.9727] },
+		"LeftLowerLeg": { "center": [-0.5, -2.3339, 0], "size": [0.9928, 1.3007, 0.9728] },
+		"LeftFoot": { "center": [-0.5, -3.0364, 0], "size": [1.0089, 0.312, 1.0011] }
+	},
+	"joints": [
+		{ "name": "Root", "part0": "HumanoidRootPart", "part1": "LowerTorso", "pivot": [0, -1, 0] },
+		{ "name": "Waist", "part0": "LowerTorso", "part1": "UpperTorso", "pivot": [0, -0.6, 0] },
+		{ "name": "Neck", "part0": "UpperTorso", "part1": "Head", "pivot": [0, 1.049, 0] },
+		{ "name": "RightShoulder", "part0": "UpperTorso", "part1": "RightUpperArm", "pivot": [0.9716, 0.7975, 0] },
+		{ "name": "RightElbow", "part0": "RightUpperArm", "part1": "RightLowerArm", "pivot": [1.5, 0.0137, 0] },
+		{ "name": "RightWrist", "part0": "RightLowerArm", "part1": "RightHand", "pivot": [1.5, -0.7563, 0] },
+		{ "name": "LeftShoulder", "part0": "UpperTorso", "part1": "LeftUpperArm", "pivot": [-0.9716, 0.7975, 0] },
+		{ "name": "LeftElbow", "part0": "LeftUpperArm", "part1": "LeftLowerArm", "pivot": [-1.5, 0.0137, 0] },
+		{ "name": "LeftWrist", "part0": "LeftLowerArm", "part1": "LeftHand", "pivot": [-1.5, -0.7563, 0] },
+		{ "name": "RightHip", "part0": "LowerTorso", "part1": "RightUpperLeg", "pivot": [0.5, -1, 0] },
+		{ "name": "RightKnee", "part0": "RightUpperLeg", "part1": "RightLowerLeg", "pivot": [0.5, -1.87, 0] },
+		{ "name": "RightAnkle", "part0": "RightLowerLeg", "part1": "RightFoot", "pivot": [0.5, -2.7974, 0] },
+		{ "name": "LeftHip", "part0": "LowerTorso", "part1": "LeftUpperLeg", "pivot": [-0.5, -1, 0] },
+		{ "name": "LeftKnee", "part0": "LeftUpperLeg", "part1": "LeftLowerLeg", "pivot": [-0.5, -1.87, 0] },
+		{ "name": "LeftAnkle", "part0": "LeftLowerLeg", "part1": "LeftFoot", "pivot": [-0.5, -2.7974, 0] }
+	]
+}

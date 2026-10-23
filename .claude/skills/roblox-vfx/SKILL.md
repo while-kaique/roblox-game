@@ -8,7 +8,17 @@ description: Criar, coletar e validar efeitos visuais — biblioteca de blocos d
 ## Montar efeitos
 - Código de efeito sempre usa `src/shared/VFXUtil.luau`: `ghostPart`, `tween`, `cleanup`, `delay`, `track`. **Nunca** `TweenService:Create` / `Debris` / `task.delay` direto num efeito — quebra o Phase Freeze.
 - Reaproveite blocos: `VFXBlocks.play("Sparks", "Nome", cframe, { emit, scale, color })` (`src/shared/VFXBlocks.luau`). `VFXBlocks.list()` mostra o que existe.
-- Referência de qualidade: `src/shared/GeppoVFX.luau` e a seção 7 do `ANIMATION_GUIDE.md` (técnicas Twist VFX: LightEmission=1, Speed 0.01 + VelocityPerpendicular, Speed alto + Drag alto, VelocityParallel, Circular easing, ZOffset).
+- Referência de qualidade: `src/shared/GeppoVFX.luau` e as técnicas abaixo.
+
+## Técnicas (Twist VFX — "How to Make Slash VFX | Roblox Studio")
+- **Sem bordas pretas**: `LightEmission = 1`, `LightInfluence = 0`.
+- **Fragmentos congelados no ar**: `Speed = 0.01` (nunca 0: some com VelocityPerpendicular) +
+  `Orientation = VelocityPerpendicular` + `RotSpeed` 400–500 com Lifetime curto.
+- **Explosão que para seco (vento)**: `Speed` 60–80 + `Drag` ~7 + `Orientation = VelocityParallel` (estica).
+- **Highlight que pulsa**: tween de 0,07 s com `EasingStyle.Circular` (senoide, não troca dura).
+- **Z-sorting**: `ZOffset` (diferenças de 0,001 evitam cortar malhas).
+- Pegadinhas: Attachment girado exatamente 180° quebra VelocityPerpendicular; Beams cruzados
+  quebram o Z-sorting (em alta velocidade ninguém percebe).
 
 ## Coletar blocos do Toolbox
 1. MCP `search_assets` (ex.: "shockwave vfx", "fire particles") → `preview_asset` / `get_asset_thumbnail` → escolha só o que tiver licença livre e sem scripts estranhos.
