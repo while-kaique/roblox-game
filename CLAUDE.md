@@ -1,3 +1,5 @@
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
 # Babau Piece — Roblox (Luau + Rojo)
 
 Responda em português. Jogo-alvo: **Babau Piece** (aberto no Studio; backup em `~/Desktop/BabauPiece.rbxl`). `Jogodokaique.rbxl` é um place de teste antigo, ignore.

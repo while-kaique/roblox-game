@@ -3,6 +3,9 @@ name: roblox-vfx
 description: Criar, coletar e validar efeitos visuais — biblioteca de blocos de VFX extraídos do Toolbox (esferas, feixes, chamas, ondas de choque…) e validação por Phase Freeze (congela o efeito em t=0.1/0.5/1.0s e tira screenshots). Use para qualquer efeito de habilidade, impacto ou ambiente.
 ---
 
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
+
 # VFX
 
 ## Montar efeitos

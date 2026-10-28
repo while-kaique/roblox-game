@@ -3,6 +3,9 @@ name: roblox-audio
 description: Adicionar sons e efeitos sonoros a habilidades, UI e ambiente usando a biblioteca local categorizada (assets/audio) e o SoundLibrary — variando sons já enviados em vez de gastar a cota mensal de upload de áudio. Use sempre que algo precisar de som.
 ---
 
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
+
 # Áudio
 
 ## Ordem de preferência (economiza a cota de upload)

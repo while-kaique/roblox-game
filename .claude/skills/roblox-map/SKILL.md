@@ -3,6 +3,9 @@ name: roblox-map
 description: Construir ou revisar mapas/fases jogáveis — gera layout a partir da física real do personagem (WalkSpeed, pulo, Geppo) e valida com raycasting (alcance entre plataformas, becos sem saída, teto baixo, quedas, linhas de visão). Use ao criar ou mudar qualquer mapa/obby/arena.
 ---
 
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
+
 # Mapas jogáveis
 
 ## Física de referência (não chute números)

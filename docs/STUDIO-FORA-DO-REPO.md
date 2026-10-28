@@ -1,3 +1,5 @@
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
 # Mudanças feitas direto no Studio (não estão no git)
 
 O Babau Piece tem módulos editados só no Studio (`ReplicatedStorage.Shared`,

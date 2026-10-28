@@ -3,6 +3,9 @@ name: create-roblox-game
 description: Orquestrador para features grandes ou um jogo/modo novo — pesquisa do gênero e do loop principal, plano de tarefas, execução em ordem chamando as skills especializadas (code, 3d-asset, animation, vfx, audio, ui, map) e playtest final via MCP. Use quando o pedido envolver várias áreas ao mesmo tempo (ex.: "cria uma arma nova completa", "faz um modo arena").
 ---
 
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
+
 # Orquestrador
 
 ## 1. Pesquisa (curta)

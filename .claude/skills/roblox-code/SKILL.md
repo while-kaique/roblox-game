@@ -3,6 +3,9 @@ name: roblox-code
 description: Escrever ou alterar código Luau do jogo (mecânicas, habilidades, regras, configs) com o pipeline pré-Studio de 4 passos (rojo build, selene, stylua, testes lune). Use para qualquer mudança em src/ ou tests/.
 ---
 
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
+
 # Engenharia de código Luau
 
 ## Onde cada coisa vive

@@ -1,3 +1,5 @@
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
 # Geppo (Sky Walk) — estado, decisões e próximos passos
 
 Atualizado em 23/10/2026. Código: `src/client/GeppoController.client.luau` (input → física →

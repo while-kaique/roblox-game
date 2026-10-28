@@ -1,3 +1,5 @@
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
 # 🎬 Guia de Animação R15 — Babau Piece (Blender por código → Studio → Roblox)
 
 O método que usamos (outubro/2026): as poses são **escritas em Python** (graus por junta, nos

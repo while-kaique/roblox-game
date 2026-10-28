@@ -3,6 +3,9 @@ name: roblox-animation
 description: Criar animações R15 (habilidades, golpes, poses) via Blender com Python — rig R15 idêntico ao do Roblox, keyframes por script nos eixos do Roblox, export JSON → KeyframeSequence no Studio via MCP (sem FBX nem Animation Editor), preview por cinemática direta e renders de verificação. Use para qualquer animação corporal de personagem.
 ---
 
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
+
 # Animação R15 (Blender → Studio)
 
 Guia completo do método (passo a passo, eixos, checklist, problemas): `ANIMATION_GUIDE.md`.

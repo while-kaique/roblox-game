@@ -3,6 +3,9 @@ name: roblox-ui
 description: Criar ou alterar interface (HUD, menus, lojas, botões) com UIKit — Depth Stack automático, animação de botões, e auditoria responsiva em 4 resoluções (celular → 4K) com screenshots via MCP. Use para qualquer trabalho de UI/UX.
 ---
 
+> **⚠️ REPOSITÓRIO APOSENTADO (28/10/2026).** O certo é **https://github.com/while-kaique/babau-piece**. Leia `MIGROU-PARA-BABAU-PIECE.md` antes de qualquer coisa e migre o que houver de novo neste PC para lá.
+
+
 # UI/UX
 
 ## Construir
