@@ -1,27 +1,54 @@
 {
 	"name": "GeppoSync",
+	"servePlaceIds": [
+		1
+	],
 	"tree": {
 		"$className": "Folder",
 		"Shared": {
 			"$className": "Folder",
-			"GeppoConfig": { "$path": "../src/shared/GeppoConfig.luau" },
-			"GeppoState": { "$path": "../src/shared/GeppoState.luau" },
-			"GeppoVFX": { "$path": "../src/shared/GeppoVFX.luau" },
-			"JumpPhysics": { "$path": "../src/shared/JumpPhysics.luau" },
-			"SoundCatalog": { "$path": "../src/shared/SoundCatalog.luau" },
-			"SoundLibrary": { "$path": "../src/shared/SoundLibrary.luau" },
-			"VFXUtil": { "$path": "../src/shared/VFXUtil.luau" },
-			"VFXBlocks": { "$path": "../src/shared/VFXBlocks.luau" },
-			"UI": { "$path": "../src/shared/UI" }
+			"GeppoConfig": {
+				"$path": "../src/shared/GeppoConfig.luau"
+			},
+			"GeppoState": {
+				"$path": "../src/shared/GeppoState.luau"
+			},
+			"GeppoVFX": {
+				"$path": "../src/shared/GeppoVFX.luau"
+			},
+			"JumpPhysics": {
+				"$path": "../src/shared/JumpPhysics.luau"
+			},
+			"SoundCatalog": {
+				"$path": "../src/shared/SoundCatalog.luau"
+			},
+			"SoundLibrary": {
+				"$path": "../src/shared/SoundLibrary.luau"
+			},
+			"VFXUtil": {
+				"$path": "../src/shared/VFXUtil.luau"
+			},
+			"VFXBlocks": {
+				"$path": "../src/shared/VFXBlocks.luau"
+			},
+			"UI": {
+				"$path": "../src/shared/UI"
+			}
 		},
-		"VFXLibrary": { "$path": "../assets/vfx" },
+		"VFXLibrary": {
+			"$path": "../assets/vfx"
+		},
 		"StarterCharacterScripts": {
 			"$className": "Folder",
-			"GeppoController": { "$path": "../src/client/GeppoController.client.luau" }
+			"GeppoController": {
+				"$path": "../src/client/GeppoController.client.luau"
+			}
 		},
 		"StarterPlayerScripts": {
 			"$className": "Folder",
-			"GeppoHUD": { "$path": "../src/client/GeppoHUD.client.luau" }
+			"GeppoHUD": {
+				"$path": "../src/client/GeppoHUD.client.luau"
+			}
 		}
 	}
 }
